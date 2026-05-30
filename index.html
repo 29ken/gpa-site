@@ -132,6 +132,8 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
 .snackbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--md-surface-cont-highest);color:var(--md-on-surface);padding:14px 16px;border-radius:var(--shape-xs);box-shadow:var(--elev-3);opacity:0;transition:all .3s var(--easing);z-index:50;max-width:90vw}
 .snackbar.show{transform:translateX(-50%) translateY(0);opacity:1}
 .hidden{display:none!important}
+.site-footer{border-top:1px solid var(--md-outline-variant);background:var(--md-surface-cont-low);margin-top:8px}
+.site-footer .footer-inner{max-width:1320px;margin:0 auto;padding:24px 24px 32px;text-align:center}
 /* Save modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
 .modal-card{background:var(--md-surface-cont-low);border-radius:var(--shape-xl);padding:24px;max-width:440px;width:100%;box-shadow:var(--elev-3)}
@@ -273,6 +275,15 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
 
  </div>
 </main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="label-large" style="color:var(--md-on-surface)">© 2026. All rights reserved.</div>
+    <div class="body-medium" style="color:var(--md-on-surface-variant);margin-top:6px;max-width:680px;">
+      This GPA Calculator &amp; Planner is an independent student-created project and is not affiliated with, endorsed by, or maintained by ASIJ.
+    </div>
+  </div>
+</footer>
 
 <div class="snackbar" id="snackbar"></div>
 
@@ -815,19 +826,26 @@ function generatePDF(mode) {
   doc.text(nameVal, L, 143);
   doc.text(yearVal || "—", R, 143, { align: "right" });
 
-  // ---------- Year boxes (2x2), dynamic height ----------
-  const boxW = (R - L - 16) / 2;       // gap 16
-  const colGap = 16, rowGap = 14;
-  const HEADER_H = 26, FIRST_ROW = 48, ROW_STEP = 24, BOT_PAD = 20;
-  const startY = 162, topMargin = 56, pageBottom = 736;
+  // ---------- Year boxes (2x2) — auto-fit to ONE page ----------
+  const boxW = (R - L - 16) / 2, colGap = 16, rowGap = 14;
+  const HEADER_H = 26, FIRST_ROW = 48, BASE = 68;   // BASE = header+top+bottom padding
+  const startY = 162, footerTop = 744, sumH = 58, sumGap = 16;
   const today = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
 
-  function drawFooter() {
-    doc.setDrawColor(GOLD); doc.setLineWidth(1); doc.line(L, 752, R, 752);
-    doc.setFont(serif, "normal"); doc.setFontSize(9); doc.setTextColor(150,150,150);
-    doc.text(`Generated on ${today}`, PW/2, 768, { align: "center" });
+  const lists = YEARS.map(yr => enrolled.filter(e => e.year === yr));
+  const row1max = Math.max(lists[0].length, lists[1].length);
+  const row2max = Math.max(lists[2].length, lists[3].length);
+
+  const boxesBottom = includeGPA ? footerTop - sumGap - sumH : footerTop;
+  const avail = boxesBottom - startY;
+  const rowH = (maxN, step) => maxN > 0 ? BASE + (maxN - 1) * step : 70;
+
+  // largest row-step (≤24) that keeps everything on one page; floor 13
+  let step = 13;
+  for (let s = 24; s >= 13; s--) {
+    if (rowH(row1max, s) + rowGap + rowH(row2max, s) <= avail) { step = s; break; }
   }
-  function boxHeight(n) { return n > 0 ? FIRST_ROW + (n-1)*ROW_STEP + BOT_PAD : 70; }
+  const fs = step >= 22 ? 10.5 : step >= 19 ? 10 : step >= 16 ? 9.5 : step >= 14 ? 9 : 8.5;
 
   function drawBox(bx, by, h, year, list) {
     doc.setDrawColor(220); doc.setLineWidth(1); doc.rect(bx, by, boxW, h);
@@ -848,7 +866,7 @@ function generatePDF(mode) {
     }
     let ry = by + FIRST_ROW;
     list.forEach(e => {
-      doc.setFont(serif, "normal"); doc.setFontSize(10.5); doc.setTextColor(34, 34, 34);
+      doc.setFont(serif, "normal"); doc.setFontSize(fs); doc.setTextColor(34, 34, 34);
       let nm = e.name;
       while (doc.getTextWidth(nm) > boxW - 70) nm = nm.slice(0, -1);
       if (nm.length < e.name.length) nm = nm.slice(0, -1) + "…";
@@ -859,33 +877,22 @@ function generatePDF(mode) {
         doc.text(mk, bx + boxW - 12, ry, { align: "right" });
       }
       doc.setDrawColor(238); doc.setLineWidth(0.5);
-      doc.line(bx + 12, ry + 8, bx + boxW - 12, ry + 8);
-      ry += ROW_STEP;
+      doc.line(bx + 12, ry + step - 16, bx + boxW - 12, ry + step - 16);
+      ry += step;
     });
   }
 
-  const rows = [[YEARS[0], YEARS[1]], [YEARS[2], YEARS[3]]];
-  let y = startY;
-  rows.forEach(pair => {
-    const lists = pair.map(yr => enrolled.filter(e => e.year === yr));
-    const rowH = Math.max(boxHeight(lists[0].length), boxHeight(lists[1].length));
-    if (y + rowH > pageBottom) {
-      drawFooter(); doc.addPage(); y = topMargin;
-      doc.setFont(serif, "bold"); doc.setFontSize(11); doc.setTextColor(...INK);
-      doc.text("ACADEMIC RECORD (continued)", PW/2, y + 8, { align: "center" });
-      y += 28;
-    }
-    drawBox(L, y, rowH, pair[0], lists[0]);
-    drawBox(L + boxW + colGap, y, rowH, pair[1], lists[1]);
-    y += rowH + rowGap;
-  });
+  const r1 = rowH(row1max, step), r2 = rowH(row2max, step);
+  drawBox(L, startY, r1, YEARS[0], lists[0]);
+  drawBox(L + boxW + colGap, startY, r1, YEARS[1], lists[1]);
+  const row2Y = startY + r1 + rowGap;
+  drawBox(L, row2Y, r2, YEARS[2], lists[2]);
+  drawBox(L + boxW + colGap, row2Y, r2, YEARS[3], lists[3]);
 
-  let cursorY = y + 14;
+  let cursorY = row2Y + r2 + sumGap;
 
   // ---------- GPA summary (only in 'both') ----------
   if (includeGPA) {
-    const sumH = 58;
-    if (cursorY + sumH > pageBottom) { drawFooter(); doc.addPage(); cursorY = topMargin; }
     const g = computeGPA(enrolled);
     const boxY = cursorY, fullW = R - L;
     doc.setFillColor(GOLD_TINT); doc.setDrawColor(GOLD); doc.setLineWidth(1.5);
@@ -899,8 +906,10 @@ function generatePDF(mode) {
     doc.text(g ? g.w.toFixed(2) : "N/A", L + fullW*0.75, boxY + 48, { align: "center" });
   }
 
-  // ---------- Footer (final page) ----------
-  drawFooter();
+  // ---------- Footer ----------
+  doc.setDrawColor(GOLD); doc.setLineWidth(1); doc.line(L, 752, R, 752);
+  doc.setFont(serif, "normal"); doc.setFontSize(9); doc.setTextColor(150,150,150);
+  doc.text(`Generated on ${today}`, PW/2, 768, { align: "center" });
 
   doc.save(fname);
   showSnack(`Saved ${fname}`);
