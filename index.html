@@ -279,7 +279,7 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="label-large" style="color:var(--md-on-surface)">© 2026. All rights reserved.</div>
-    <div class="body-medium" style="color:var(--md-on-surface-variant);margin-top:6px;max-width:680px;">
+    <div class="body-medium" style="color:var(--md-on-surface-variant);margin:6px auto 0;max-width:680px;">
       This GPA Calculator &amp; Planner is an independent student-created project and is not affiliated with, endorsed by, or maintained by ASIJ.
     </div>
   </div>
@@ -907,9 +907,11 @@ function generatePDF(mode) {
   }
 
   // ---------- Footer ----------
-  doc.setDrawColor(GOLD); doc.setLineWidth(1); doc.line(L, 752, R, 752);
-  doc.setFont(serif, "normal"); doc.setFontSize(9); doc.setTextColor(150,150,150);
-  doc.text(`Generated on ${today}`, PW/2, 768, { align: "center" });
+  doc.setDrawColor(GOLD); doc.setLineWidth(1); doc.line(L, 750, R, 750);
+  doc.setFont(serif, "normal"); doc.setFontSize(8.5); doc.setTextColor(150,150,150);
+  doc.text(`Generated on ${today}`, PW/2, 763, { align: "center" });
+  doc.setFontSize(6.6); doc.setTextColor(165,165,165);
+  doc.text("This GPA Calculator & Planner is an independent student-created project and is not affiliated with, endorsed by, or maintained by ASIJ.", PW/2, 776, { align: "center" });
 
   doc.save(fname);
   showSnack(`Saved ${fname}`);
