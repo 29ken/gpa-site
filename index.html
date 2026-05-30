@@ -619,6 +619,7 @@ function render() {
 
   renderRequirements();
   computeCumulative();
+  saveState();
 }
 
 /* ============================================================
@@ -955,18 +956,66 @@ document.getElementById('reqToggle').onclick = () => {
   document.getElementById('reqChevron').textContent = reqCollapsed ? 'expand_more' : 'expand_less';
 };
 
-themeBtn.onclick=()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'light':'dark');themeBtn.querySelector('span').textContent=d?'dark_mode':'light_mode';};
+themeBtn.onclick=()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'light':'dark');themeBtn.querySelector('span').textContent=d?'dark_mode':'light_mode';saveState();};
 let st;function showSnack(m){const sb=document.getElementById('snackbar');sb.textContent=m;sb.classList.add('show');clearTimeout(st);st=setTimeout(()=>sb.classList.remove('show'),2600);}
 
-// keep graduation year numeric
+// ---- Persistence: remember this person's plan on their device ----
+const STORAGE_KEY = 'asij_gpa_planner_v1';
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      enrolled,
+      studentName: document.getElementById('studentName').value,
+      gradYear: document.getElementById('gradYear').value,
+      theme: document.documentElement.getAttribute('data-theme') || 'light',
+    }));
+  }catch(e){ /* storage unavailable — app still works without saving */ }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    if(Array.isArray(data.enrolled)){
+      enrolled = data.enrolled;
+      // make sure any required courses still exist (handles version changes)
+      const have = new Set(enrolled.filter(e=>e.required).map(e=>e.id));
+      for(const year of YEARS){
+        for(const id of (REQUIRED[year]||[])){
+          if(!have.has(id)){
+            const c = COURSE_BY_ID[id];
+            if(c){ const [cid,name,credits,level]=c; const pf=PASS_FAIL.has(name);
+              enrolled.push({uid:nextUid(),id:cid,name,credits,level,passFail:pf,year,required:true,grade:pf?null:PLANNED,result:pf?PLANNED:null}); }
+          }
+        }
+      }
+      // restore uid counter so new adds don't collide
+      let maxU = 0;
+      enrolled.forEach(e=>{ if(!e.uid) e.uid = nextUid(); else { const n=parseInt(String(e.uid).replace(/\D/g,''),10); if(n>maxU) maxU=n; } });
+      uidCounter = Math.max(uidCounter, maxU);
+    }
+    if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
+    if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
+    if(data.theme==='dark'){
+      document.documentElement.setAttribute('data-theme','dark');
+      themeBtn.querySelector('span').textContent='light_mode';
+    }
+  }catch(e){ /* ignore corrupt/blocked storage */ }
+}
+
+// keep graduation year numeric + persist header fields
 document.getElementById('gradYear').addEventListener('input', e => {
   e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+  saveState();
 });
+document.getElementById('studentName').addEventListener('input', saveState);
 
 // embed the brand logo (works offline)
 document.getElementById('brandLogo').src = LOGO_DATA;
 
+loadState();
 render();
+
 </script>
 </body>
 </html>
