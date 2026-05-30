@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ASIJ GPA Calculator & Planner</title>
+<meta name="description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
+<meta name="robots" content="index, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400;8..144,500&display=swap" rel="stylesheet">
@@ -180,7 +182,33 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
 .class-of{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--md-on-surface-variant);white-space:nowrap}
 .hdr-input.year{width:64px;text-align:center}
 @media (max-width:720px){
-  .student-fields{display:none}
+  /* header: wrap student fields to a full-width second row instead of hiding */
+  .top-app-bar{height:auto;flex-wrap:wrap;padding:10px 12px;gap:10px}
+  .top-app-bar .title{flex:1 1 auto;min-width:0}
+  .top-app-bar .title .title-large{font-size:18px;line-height:22px}
+  #themeBtn{order:4}
+  .student-fields{order:5;flex-basis:100%;width:100%;gap:8px}
+  .hdr-input{flex:1 1 auto;width:auto}
+  .hdr-input.year{flex:0 0 70px}
+  /* tighter page padding */
+  .container{padding:14px 12px 96px}
+  /* stack summary bars */
+  .bar-grid{grid-template-columns:1fr;gap:12px}
+  /* smaller GPA numbers */
+  .gpa-stat{min-width:120px}
+  .gpa-stat .num{font-size:34px}
+  /* segmented picker fits small widths */
+  .segmented button{font-size:11px;gap:2px}
+  /* class rows wrap so controls never overflow */
+  .class-row{flex-wrap:wrap;gap:8px;padding:12px 8px}
+  .class-row .info{flex:1 1 100%}
+  select.grade-select,select.pf-select,select.year-select{font-size:13px;padding:7px 8px}
+  .modal-card{padding:18px}
+}
+@media (max-width:380px){
+  .segmented button{font-size:10px}
+  .top-app-bar .title .label-medium{display:none}
+  .gpa-hero{flex-direction:column}
 }
 </style>
 </head>
