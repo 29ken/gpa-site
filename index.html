@@ -419,7 +419,7 @@ const YEARS = ["Freshman","Sophomore","Junior","Senior"];
 
 /* Graduation-required courses auto-loaded per year (by course ID) */
 const REQUIRED = {
-  "Freshman":  ["ENG 1000","SOC 1100","SCI 1300"], // English 9, Foundations of the Modern World, Biology, Wellness 9
+  "Freshman":  ["ENG 1000","SOC 1100","SCI 1300"], // English 9, Foundations of the Modern World, Biology
   "Sophomore": ["ENG 2000","PE 2802"],                        // English 10, Wellness 10
   "Junior":    ["DLS 5800"],                                  // Deep Learning Seminar I
   "Senior":    ["DLS 5801"],                                  // Deep Learning Seminar 2
@@ -987,6 +987,9 @@ function loadState(){
     const data = JSON.parse(raw);
     if(Array.isArray(data.enrolled)){
       enrolled = data.enrolled;
+      // reconcile lock status with the CURRENT required list
+      // (so a course removed from REQUIRED no longer shows as locked)
+      enrolled.forEach(e => { e.required = REQUIRED_IDS.has(e.id); });
       // make sure any required courses still exist (handles version changes)
       const have = new Set(enrolled.filter(e=>e.required).map(e=>e.id));
       for(const year of YEARS){
