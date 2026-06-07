@@ -123,6 +123,12 @@ body{font-family:'Roboto',sans-serif;background:var(--md-surface);color:var(--md
 
 .class-row{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 16px;border-bottom:1px solid var(--md-outline-variant)}
 .class-row:last-child{border-bottom:none}
+.class-row.dragging{opacity:.4}
+.class-row.drop-before{box-shadow:inset 0 2px 0 0 var(--brand)}
+.class-row.drop-after{box-shadow:inset 0 -2px 0 0 var(--brand)}
+.drag-handle{display:grid;place-items:center;flex-shrink:0;color:var(--md-outline);cursor:grab}
+.drag-handle:active{cursor:grabbing}
+.drag-handle .material-symbols-rounded{font-size:20px}
 .class-row .info{flex:1;min-width:0}
 .class-row .info .name{color:var(--md-on-surface);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .class-row .info .detail{color:var(--md-on-surface-variant)}
@@ -212,6 +218,7 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
   .class-row{flex-wrap:wrap;gap:8px;padding:12px 8px}
   .class-row .info{flex:1 1 100%}
   select.grade-select,select.pf-select,select.year-select{font-size:13px;padding:7px 8px}
+  .drag-handle{display:none}
   .modal-card{padding:18px}
 }
 @media (max-width:380px){
@@ -227,13 +234,18 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
   <div class="leading-icon"><img id="brandLogo" alt="ASIJ logo"></div>
   <div class="title">
     <div class="title-large">ASIJ GPA Calculator & Planner</div>
-    <div class="label-medium" style="color:var(--md-on-surface-variant)">2026–27 Learning Framework</div>
   </div>
   <div class="student-fields">
     <input id="studentName" class="hdr-input" type="text" placeholder="Your name" autocomplete="off">
     <div class="class-of">
       <span>Class of</span>
-      <input id="gradYear" class="hdr-input year" type="text" inputmode="numeric" maxlength="4" placeholder="" autocomplete="off">
+      <select id="gradYear" class="hdr-input year" style="width:auto;min-width:78px;">
+        <option value="">—</option>
+        <option value="2027">2027</option>
+        <option value="2028">2028</option>
+        <option value="2029">2029</option>
+        <option value="2030">2030</option>
+      </select>
     </div>
   </div>
   <button class="icon-btn" id="themeBtn" title="Toggle theme"><span class="material-symbols-rounded">dark_mode</span></button>
@@ -253,6 +265,7 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
         <button data-year="Junior">Junior</button>
         <button data-year="Senior">Senior</button>
       </div>
+      <div id="fwLabel" class="note label-medium" style="margin-top:8px;"></div>
       <div class="field" style="margin-top:14px;">
         <span class="leading material-symbols-rounded">search</span>
         <input id="search" type="text" placeholder="Search by name or ID (e.g. Calculus, MTH 5201)" autocomplete="off">
@@ -299,14 +312,15 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
         <span><i class="dot" style="background:var(--md-tertiary);opacity:.6"></i>Planned</span>
         <span id="progressPct"></span>
       </div>
-      <hr class="divider">
-      <button class="btn text" id="saveBtn"><span class="material-symbols-rounded">download</span>Save as PDF</button>
     </div>
   </div>
 
   <!-- RIGHT: year planner -->
   <div class="pane-right">
-    <div class="section-label label-large" style="margin-top:0;">Four-year plan</div>
+    <div class="row-between" style="margin:0 0 8px;">
+      <div class="section-label label-large" style="margin:0;">Four-year plan</div>
+      <button class="btn text" id="saveBtn"><span class="material-symbols-rounded">download</span>Save as PDF</button>
+    </div>
     <div id="yearSections"></div>
   </div>
 
@@ -342,10 +356,19 @@ select.grade-select,select.pf-select,select.year-select{font-family:'Roboto';fon
   </div>
 </div>
 
+<div id="alertModal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:380px;text-align:center;">
+    <span class="material-symbols-rounded" style="font-size:42px;color:var(--md-primary);">school</span>
+    <div class="title-large" style="margin:8px 0 6px;">Choose your Class of …</div>
+    <div class="body-medium note" id="alertMsg" style="margin-bottom:20px;"></div>
+    <button class="btn filled" id="alertOk">Got it</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const LOGO_DATA = "data:image/jpeg;base64,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mkyaXDIGuJwAwB5VO5P16fjXmFfNeJGKoVswjCk03FWdu/T7j0uG6U4UJSls3p/mdb8PP+Rsk/692/8AQlrq/H//ACJsn/XRP51ynw8/5GyT/r3b/wBCWur8f/8AImyf9dE/nXv5A/8AjFMR6SPPx3/I2h6o8nzxXWaH4IfWNIh1AaikSybvl8stjBI9R6VyRGRivQfh5rEQhl0e4kAfcZItx+8COQPpjP4n0r4Xg/C4HF5gqGPV4yTS1a16anu5xVr0sP7Sg7NPXrochrmlHRtclsN5kCAEORjIIBzj65H4V6P4CBHg6IkYBkc/rVvXPDGm67JHNdeYkqDAkiIBI64OQeK0rO1tdN01LSBRHBEuBk9upJNfqGQcJTynNauLulSafKr66vrfsfMY/No4rCQpO/NdXPNviJn/AIS1P+vZf/Qmrk+orZ8VapHqvieaeJt0SARofUDv+JJNY1fkPEmJhiMzr1KbunJ2ffpc+uyynKnhacZKzSCiiivDO4Vfvr9aKF++v1orSGwmDffb60lK332+tJUPca2CiiikBqp4m16NBGmpzKqgAAYwAOg6VQurq4vbpri6maWVsZdupwMCoaK662PxNeCp1ajcV0bbX3GMMPTg+aMUn5JBWjba/rNnapb22oTRxJkBFPA5z/Ws6iooYuth5OVCbi3pdNp2+RVWlCorTSa81cs3uo3uoyK97cNOyjCl+oHpVdWZHV0YqynIZTgg0lFROvUqTdWcm5Pq3r94404wjyxVkbtr4x8RWqBFv2kUdBKoY/mRn9aW58aeIrmMob8xKevlIFP54yPzrBor0ln+ZKHs1iJ27czOb+z8Nfm9mr+iHO7ySGSR2dycsSckn1JptFFeTKUpPmkdiVixZ313p05nsZ2hkIKll644OP0FT3et6tf25t7y+lljJBKt0yOlZ4GKWumGOxFOm6MajUXuk3Z330vYxdCnKXO4pvvbUKVHZJA6MVZTlSDgg+oNJRXNGTi7xNrXN+38a+IreIR/bRKoGAZEBP54yfxqtqPiXW9UiMV1et5R6ogCg/XHX8ayaK9SpnmY1Kfsp15OO1rvbsckcDh4y51TSfeyCiiivKOsKKKKAFX76/Wihfvr9aK0hsJg332+tJSt99vrSVD3GtgooopAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFACr99frRQv31+tFaQ2Ewb77fWkpW++31pKh7jWwUUUUgCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigBV++v1ooX76/WitIbCYN99vrSUrffb60lQ9xrYKKKKQBRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAq/fX60UL99frRWkNhMG++31pKVvvt9aSoe41sFFFFIAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAVfvr9aKF++v1orSGwmKytvPynr6Um1v7p/KiihxVxJi7W/ut+VG1v7rflRRU8qC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLgqtvHynr6UUUVrGKJbP/2Q==";
-const COURSES = [
+const COURSES_2627 = [
   ["DLS 5800","Deep Learning Seminar I",1,5],["DLS 5801","Deep Learning Seminar 2",1,5],
   ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
   ["ENG 1000","English 9",1,1],["ENG 2000","English 10",1,2],
@@ -359,7 +382,7 @@ const COURSES = [
   ["SOC 5102","AP Macroeconomics",1,5],["SOC 5103","AP Microeconomics",1,5],
   ["SOC 5104","SUPA: Psychology",1,5],["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],
   ["SOC 6100","Japan Seminar",1,6],
-  ["MTH 1201","Integrated Mathematics 1 (Old Algebra 1)",1,1],["MTH 2200","Integrated Mathematics 2 (Old Geometry)",1,2],
+  ["MTH 1201","Integrated Mathematics 1",1,1],["MTH 2200","Integrated Mathematics 2",1,2],
   ["MTH 3200","Algebra 2",1,3],["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],
   ["MTH 4202","Calculus",1,4],["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],
   ["MTH 5203","AP Calculus BC (Post AB)",1,5],["MTH 5202","AP Statistics",1,5],
@@ -370,7 +393,7 @@ const COURSES = [
   ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
   ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
   ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
-  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Technology & Society (Old GCDA)",0.5,1],
+  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Technology & Society",0.5,1],
   ["DI 1904","Data Science I: Literacy, Analysis, and Visualization",0.5,1],
   ["DI 1905","Cybersecurity I: Networks & Security",0.5,1],["DI 2900","Design Studio",0.5,2],
   ["DI 4906","Data Science 2: AI & ML Models",0.5,4],["DI 4907","Cybersecurity 2: Ethical Hacking",0.5,4],
@@ -404,12 +427,239 @@ const COURSES = [
   ["VPA 3700","Ceramics",0.5,3],["VPA 3703","Photography",0.5,3],["VPA 3701","Printmaking",0.5,3],
   ["VPA 4700","Advanced Studio Art",1,4],["VPA 5700","AP Studio Art: Drawing",1,5],
   ["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
-  ["PE 1802","(Old) Wellness 9",0.5,1],["PE 1802","(New) Wellness 9",1,1],["PE 2802","Wellness 10",1,2],["PE 3805","Lifetime Activities",0.5,3],
+  ["PE 1802","Wellness 9",1,1],["PE 2802","Wellness 10",1,2],["PE 3805","Lifetime Activities",0.5,3],
   ["PE 3801","Strength Training & Conditioning",0.5,3],["PE 4801","Strength Training & Conditioning 2",0.5,4],
   ["PE 3803","Lifeguard Training",0.5,3],["PE 3804","Personal Fitness",0.5,3],
   ["IND 1004","Skills for Success",0.5,1],["IND 1003","Teaching Intern",0.5,1],
   ["IND 4000","Independent Inquiry",0.5,4],["IND 4001","Global Online Academy (GOA)",0.5,4],
 ];
+
+/* ===== 2025–26 HS Learning Framework course list (for students who took
+   classes under the older framework — names/credits/offerings differ). ===== */
+const COURSES_2526 = [
+  ["DLS 5800","Deep Learning Seminar I",1,5],["DLS 5801","Deep Learning Seminar II",1,5],
+  ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
+  ["ENG 1000","English 9",1,1],["ENG 2000","English 10",1,2],
+  ["ENG 4004","English 11/12: Crime & Punishment",1,4],["ENG 4003","English 11/12: Psychology of Fear",1,4],
+  ["ENG 5000","AP English Language & Composition",1,5],["ENG 5001","AP English Literature & Composition",1,5],
+  ["ENG 5002","SUPA: Introduction to Creative Nonfiction",1,5],["ENG 5003","SUPA: Presentational Speaking",0.5,5],
+  ["SOC 1100","Foundations of the Modern World",1,1],["SOC 2100","Modern World History",1,2],
+  ["SOC 3101","Japan Studies",0.5,3],["SOC 3103","Contemporary World Issues: Sustainable Development",0.5,3],
+  ["SOC 4100","US History",0.5,4],["SOC 4101","Race and Ethnic Studies",0.5,4],
+  ["SOC 5100","AP World History",1,5],["SOC 5101","AP US History",1,5],
+  ["SOC 5102","AP Economics",1,5],["SOC 5103","AP Microeconomics",1,5],
+  ["SOC 5104","SUPA: Psychology",1,5],["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],
+  ["SOC 6100","Japan Seminar",1,6],
+  ["MTH 1201","Integrated Mathematics I",1,1],["MTH 2200","Geometry",1,2],
+  ["MTH 3200","Algebra 2",1,3],["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],
+  ["MTH 4202","Calculus",1,4],["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],
+  ["MTH 5203","AP Calculus BC (Post AB)",1,5],["MTH 5202","AP Statistics",1,5],
+  ["MTH 6202","Advanced Math Topics: Linear Algebra & Multivariable Calculus",1,6],
+  ["SCI 1300","Biology",1,1],["SCI 2301","Chemistry",1,2],["SCI 2302","Dynamics of Chemistry & Physics",1,2],
+  ["SCI 3302","Physics",1,3],["SCI 4300","Biomedical Science",1,4],["SCI 4301","Organic Chemistry",1,4],
+  ["SCI 4303","Food Science & Sustainability",1,4],
+  ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
+  ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
+  ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
+  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Global Citizenship in the Digital Age",0.5,1],
+  ["DI 2900","Design Studio",0.5,2],["DI 5900","AP Computer Science Principles",1,5],
+  ["DI 5901","AP Computer Science A",1,5],["DI 5903","Data Science",1,5],
+  ["DI 6902","Advanced Topics in Computer Science",0.5,6],
+  ["MDL 1510","Novice Mid Chinese",1,1],["MDL 2510","Novice High Chinese",1,2],
+  ["MDL 3510","Intermediate Chinese",1,3],["MDL 4510","Intermediate Mid Chinese",1,4],
+  ["MDL 5510","AP Chinese Language & Culture",1,5],["MDL 6501","Advanced Chinese: Culture & Media",1,6],
+  ["MDL 1511","Novice Mid-High Spanish",1,1],["MDL 2511","Intermediate Spanish",1,2],
+  ["MDL 3511","Intermediate Mid Spanish",1,3],["MDL 4511","Intermediate High Spanish",1,4],
+  ["MDL 5511","AP Spanish Language & Culture",1,5],["MDL 6511","Advanced Spanish",1,6],
+  ["MDL 1502","Novice Japanese",1,1],["MDL 2502","Novice Mid Japanese",1,2],
+  ["MDL 3502","Novice High Japanese",1,3],["MDL 4502","Intermediate Japanese",1,4],
+  ["MDL 5502","AP Japanese Language & Culture",1,5],["MDL 6502","Intermediate High Japanese",1,6],
+  ["MDL 6503","Advanced Japanese",1,6],["MDL 6504","Advanced High Japanese",1,6],
+  ["MDL 6505","Superior Japanese: General Topics",1,6],["MDL 6506","Superior Japanese: Field Specific Studies & Research",1,6],
+  ["MDL 6507","Superior Japanese: Literature",1,6],["MDL 6508","Superior Japanese: Innovation & Entrepreneurship",1,6],
+  ["VPA 1600","Introduction to Band",1,1],["VPA 2600","Concert Band 1",1,2],["VPA 3600","Concert Band 2",1,3],
+  ["VPA 4600","Wind Ensemble",1,4],["VPA 5600","Wind Ensemble Extended Studies",1,5],
+  ["VPA 4605","Jazz Band",1,4],["VPA 5605","Jazz Band Extended Studies",1,5],
+  ["VPA 1601","Concert Choir 1",1,1],["VPA 2601","Concert Choir 2",1,2],["VPA 3601","Chamber Singers",1,3],
+  ["VPA 4601","Vocal Jazz Ensemble",1,4],["VPA 5601","Vocal Jazz Ensemble Extended Studies",1,5],
+  ["VPA 2604","Concert Orchestra 1",1,2],["VPA 3604","Concert Orchestra 2",1,3],
+  ["VPA 4604","Chamber Orchestra",1,4],["VPA 5604","Chamber Orchestra Extended Studies",1,5],
+  ["VPA 1602","Modern Band 1",0.5,1],["VPA 2602","Modern Band 2",0.5,2],
+  ["VPA 1603","Composition & Songwriting 1",0.5,1],["VPA 2603","Composition & Songwriting 2",0.5,2],
+  ["VPA 1650","Acting 1",0.5,1],["VPA 2650","Acting 2",0.5,2],["VPA 3650","Advanced Acting",0.5,3],
+  ["VPA 3651","Acting for the Camera",0.5,3],["VPA 1651","Stagecraft",0.5,1],
+  ["VPA 1700","Art Foundations",1,1],["VPA 1704","Idea to Object: Digital Fabrication",0.5,1],
+  ["VPA 1705","Digital Filmmaking 1",0.5,1],["VPA 2700","Digital Filmmaking 2",0.5,2],
+  ["VPA 3700","Ceramics",0.5,3],["VPA 3702","Communication Arts",0.5,3],["VPA 3703","Photography",0.5,3],
+  ["VPA 3701","Printmaking",0.5,3],["VPA 4700","Advanced Studio Art",1,4],
+  ["VPA 5700","AP Studio Art: Drawing",1,5],["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
+  ["PE 1802","Wellness 9",0.5,1],["PE 2802","Wellness 10",1,2],["PE 3805","Lifetime Activities",0.5,3],
+  ["PE 3801","Strength Training & Conditioning",0.5,3],["PE 4801","Strength Training & Conditioning 2",0.5,4],
+  ["PE 3803","Lifeguard Training",0.5,3],["PE 3804","Personal Fitness",0.5,3],
+  ["IND 1004","Skills for Success",0.5,1],["IND 1003","Teaching Intern",0.5,1],
+  ["IND 4000","Independent Inquiry",0.5,4],["IND 4001","Global Online Academy (GOA)",0.5,4],
+];
+
+/* ===== 2024–25 HS Learning Framework course list ===== */
+const COURSES_2425 = [
+  ["DLS 5800","Deep Learning Seminar I",1,5],["DLS 5801","Deep Learning Seminar II",1,5],
+  ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
+  ["ENG 1000","English 9",1,1],["ENG 2000","English 10",1,2],
+  ["ENG 4004","English 11/12: Advanced Topics: Crime and Punishment",1,4],["ENG 4003","English 11/12: Advanced Topics: Psychology of Fear",1,4],
+  ["ENG 5000","AP English Language and Composition",1,5],["ENG 5001","AP English Literature and Composition",1,5],
+  ["ENG 5002","SUPA: Introduction to Creative Nonfiction",1,5],["ENG 5003","SUPA: Presentational Speaking",0.5,5],
+  ["SOC 1100","Foundations of the Modern World",1,1],["SOC 2100","Modern World History",1,2],
+  ["SOC 3101","Japan Studies",0.5,3],["SOC 3103","Contemporary World Issues: Economics for Sustainable Development",0.5,3],
+  ["SOC 4100","US History",0.5,4],["SOC 4101","Race and Ethnic Studies",0.5,4],
+  ["SOC 5100","AP World History",1,5],["SOC 5101","AP US History",1,5],
+  ["SOC 5102","AP Economics",1,5],["SOC 5104","SUPA: Psychology",1,5],
+  ["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],["SOC 6100","Japan Seminar",1,6],
+  ["MTH 1200","Algebra 1",1,1],["MTH 2200","Geometry",1,2],["MTH 3200","Algebra 2",1,3],
+  ["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],["MTH 4202","Calculus",1,4],
+  ["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],["MTH 5203","AP Calculus BC (Post AB)",1,5],
+  ["MTH 5202","AP Statistics",1,5],["MTH 6201","Advanced Math Topics: Differential Equations & Complex Variables",1,6],
+  ["SCI 1300","Biology",1,1],["SCI 2301","Chemistry",1,2],["SCI 3302","Physics",1,3],
+  ["SCI 4300","Biomedical Science",1,4],["SCI 4301","Organic Chemistry",1,4],["SCI 4303","Food Science and Sustainability",1,4],
+  ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
+  ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
+  ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
+  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Global Citizenship in the Digital Age",0.5,1],
+  ["DI 5900","AP Computer Science Principles",1,5],["DI 5901","AP Computer Science A",1,5],
+  ["DI 5903","SUPA: Data Science",1,5],["DI 6902","Advanced Topics in Computer Science",0.5,6],
+  ["MDL 1510","Novice Mid Chinese",1,1],["MDL 2510","Novice High Chinese",1,2],
+  ["MDL 3510","Intermediate Chinese",1,3],["MDL 4510","Intermediate Mid Chinese",1,4],
+  ["MDL 5510","AP Chinese Language and Culture",1,5],["MDL 6500","Advanced Chinese: Politics & Economics",1,6],
+  ["MDL 1511","Novice Mid-High Spanish",1,1],["MDL 2511","Intermediate Spanish",1,2],
+  ["MDL 3511","Intermediate Mid Spanish",1,3],["MDL 4511","Intermediate High Spanish",1,4],
+  ["MDL 5511","AP Spanish Language and Culture",1,5],
+  ["MDL 1502","Novice Japanese",1,1],["MDL 2502","Novice Mid Japanese",1,2],
+  ["MDL 3502","Novice High Japanese",1,3],["MDL 4502","Intermediate Japanese",1,4],
+  ["MDL 5502","AP Japanese Language and Culture",1,5],["MDL 6502","Intermediate High Japanese",1,6],
+  ["MDL 6503","Advanced Japanese",1,6],["MDL 6504","Advanced High Japanese",1,6],
+  ["MDL 6505","Superior Japanese: General Topics",1,6],["MDL 6506","Superior Japanese: Field Specific Studies and Research",1,6],
+  ["MDL 6507","Superior Japanese: Literature",1,6],["MDL 6508","Superior Japanese: Innovation and Entrepreneurship",1,6],
+  ["MDL 6509","Applied Japanese Through Impact Capstone",1,6],
+  ["VPA 1600","Introduction to Band",1,1],["VPA 2600","Concert Band 1",1,2],["VPA 3600","Concert Band 2",1,3],
+  ["VPA 4600","Wind Ensemble",1,4],["VPA 5600","Wind Ensemble Extended Studies",1,5],
+  ["VPA 4605","Jazz Band",1,4],["VPA 5605","Jazz Band Extended Studies",1,5],
+  ["VPA 1601","Concert Choir 1",1,1],["VPA 2601","Concert Choir 2",1,2],["VPA 3601","Chamber Singers",1,3],
+  ["VPA 4601","Vocal Jazz Ensemble",1,4],["VPA 5601","Vocal Jazz Ensemble Extended Studies",1,5],
+  ["VPA 2604","Concert Orchestra 1",1,2],["VPA 3604","Concert Orchestra 2",1,3],
+  ["VPA 4604","Chamber Orchestra",1,4],["VPA 5604","Chamber Orchestra Extended Studies",1,5],
+  ["VPA 1602","Modern Band 1",0.5,1],["VPA 2602","Modern Band 2",0.5,2],
+  ["VPA 1603","Composition and Songwriting 1",0.5,1],["VPA 2603","Composition and Songwriting 2",0.5,2],
+  ["VPA 1650","Acting 1",0.5,1],["VPA 2650","Acting 2",0.5,2],["VPA 3650","Advanced Acting",0.5,3],
+  ["VPA 1651","Stagecraft",0.5,1],
+  ["VPA 1700","Art Foundations",1,1],["VPA 1704","Idea to Object: Digital Fabrication",0.5,1],
+  ["VPA 1705","Digital Filmmaking 1",0.5,1],["VPA 2700","Digital Filmmaking 2",0.5,2],
+  ["VPA 3700","Ceramics",0.5,3],["VPA 3702","Communication Arts",0.5,3],["VPA 3703","Photography",0.5,3],
+  ["VPA 4700","Advanced Studio Art",1,4],
+  ["VPA 5700","AP Studio Art: Drawing",1,5],["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
+  ["PE 1802","Wellness 9",0.5,1],["PE 2802","Wellness 10",1,2],["PE 3805","Lifetime Activities",0.5,3],
+  ["PE 3801","Strength Training and Conditioning",0.5,3],["PE 4801","Strength Training and Conditioning 2",0.5,4],
+  ["PE 3803","Lifeguard Training",0.5,3],["PE 3804","Personal Fitness",0.5,3],
+  ["IND 1004","Skills for Success",0.5,1],["IND 1003","Teaching Intern",0.5,1],
+  ["IND 4000","Independent Inquiry",0.5,4],["IND 4001","Global Online Academy (GOA)",0.5,4],
+  ["IND 6001","IMPACT Capstone: Element in Action",1,6],
+];
+
+/* ===== 2023–24 HS Learning Framework course list ===== */
+const COURSES_2324 = [
+  ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
+  ["ENG 1000","English 9",1,1],["ENG 1001","Humanities: English / History",1,1],
+  ["ENG 2000","English 10",1,2],
+  ["ENG 4001","English 11/12: Advanced Topics: Crime and Punishment",1,4],
+  ["ENG 4002","English 11/12: Advanced Topics: Heroes and Villains",1,4],
+  ["ENG 4003","English 11/12: Advanced Topics: Psychology of Fear",1,4],
+  ["ENG 5000","AP English Language and Composition",1,5],["ENG 5001","AP English Literature and Composition",1,5],
+  ["ENG 5002","SUPA: Introduction to Creative Nonfiction",1,5],["ENG 5003","SUPA: Presentational Speaking",0.5,5],
+  ["SOC 1100","Foundations of the Modern World",1,1],["SOC 1101","Humanities: English / History",1,1],
+  ["SOC 2100","Modern World History",1,2],["SOC 3100","Psychology",0.5,3],
+  ["SOC 3101","Japan Studies",0.5,3],["SOC 3103","Contemporary World Issues: Economics for Sustainable Development",0.5,3],
+  ["SOC 4100","US History",1,4],["SOC 3102","Race and Ethnic Studies",0.5,3],
+  ["SOC 5100","AP World History",1,5],["SOC 5101","AP US History",1,5],
+  ["SOC 5102","AP Economics",1,5],["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],
+  ["SOC 6100","Japan Seminar",1,6],
+  ["MTH 1200","Algebra 1",1,1],["MTH 2200","Geometry",1,2],["MTH 3200","Algebra 2 with Trigonometry",1,3],
+  ["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],["MTH 4202","Calculus",1,4],
+  ["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],["MTH 5203","AP Calculus BC (Post AB)",1,5],
+  ["MTH 5202","AP Statistics",1,5],["MTH 6201","Advanced Math Topics: Linear Algebra, Multivariable Calculus",1,6],
+  ["SCI 1300","Biology",1,1],["SCI 2301","Chemistry",1,2],["SCI 3302","Physics",1,3],
+  ["SCI 4300","Biomedical Science",1,4],["SCI 4301","Organic Chemistry",1,4],
+  ["SCI 4302","Exercise & Health Science",1,4],["SCI 4303","Food Science and Sustainability",1,4],
+  ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
+  ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
+  ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
+  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Global Citizenship in the Digital Age",0.5,1],
+  ["DI 2900","Design Studio",0.5,2],["DI 5902","AP Computer Science Principles",1,5],
+  ["DI 5901","AP Computer Science A",1,5],["DI 5903","SUPA: Data Science",1,5],
+  ["MDL 1510","Novice Mid Chinese",1,1],["MDL 2510","Novice High Chinese",1,2],
+  ["MDL 3510","Intermediate Chinese",1,3],["MDL 4510","Intermediate Mid Chinese",1,4],
+  ["MDL 5510","AP Chinese Language and Culture",1,5],["MDL 6501","Advanced Chinese: Culture and Media",1,6],
+  ["MDL 1511","Novice Mid-High Spanish",1,1],["MDL 2511","Intermediate Spanish",1,2],
+  ["MDL 3511","Intermediate Mid Spanish",1,3],["MDL 4511","Intermediate High Spanish",1,4],
+  ["MDL 5511","AP Spanish Language and Culture",1,5],["MDL 6511","Advanced Spanish",1,6],
+  ["MDL 1502","Novice Japanese",1,1],["MDL 2502","Novice Mid Japanese",1,2],
+  ["MDL 3502","Novice High Japanese",1,3],["MDL 4502","Intermediate Japanese",1,4],
+  ["MDL 5502","AP Japanese Language and Culture",1,5],["MDL 6502","Intermediate High Japanese",1,6],
+  ["MDL 6503","Advanced Japanese",1,6],["MDL 6504","Advanced High Japanese",1,6],
+  ["MDL 6505","Superior Japanese: General Topics",1,6],["MDL 6506","Superior Japanese: Field Specific Studies and Research",1,6],
+  ["MDL 6507","Superior Japanese: Literature",1,6],["MDL 6508","Superior Japanese: Innovation and Entrepreneurship",1,6],
+  ["MDL 6509","Applied Japanese Through Impact Capstone",1,6],
+  ["VPA 1600","Introduction to Band",1,1],["VPA 2600","Concert Band 1",1,2],["VPA 3600","Concert Band 2",1,3],
+  ["VPA 4600","Wind Ensemble",1,4],["VPA 5600","Wind Ensemble Extended Studies",1,5],
+  ["VPA 4605","Jazz Band",1,4],["VPA 5605","Jazz Band Extended Studies",1,5],
+  ["VPA 1601","Concert Choir 1",1,1],["VPA 2601","Concert Choir 2",1,2],["VPA 3601","Chamber Singers",1,3],
+  ["VPA 4601","Vocal Jazz Ensemble",1,4],["VPA 5601","Vocal Jazz Ensemble Extended Studies",1,5],
+  ["VPA 2604","Concert Orchestra 1",1,2],["VPA 3604","Concert Orchestra 2",1,3],
+  ["VPA 4604","Chamber Orchestra",1,4],["VPA 5604","Chamber Orchestra Extended Studies",1,5],
+  ["VPA 1602","Guitar 1",0.5,1],["VPA 2602","Guitar 2",0.5,2],
+  ["VPA 1603","Composition and Songwriting 1",0.5,1],["VPA 2603","Composition and Songwriting 2",0.5,2],
+  ["VPA 2605","Global Music",0.5,2],
+  ["VPA 1650","Acting 1",0.5,1],["VPA 2650","Acting 2",0.5,2],["VPA 1651","Stagecraft",0.5,1],
+  ["VPA 1700","Art Foundations",1,1],["VPA 1704","Idea to Object: Digital Fabrication",0.5,1],
+  ["VPA 1705","Digital Filmmaking 1",0.5,1],["VPA 2700","Digital Filmmaking 2",0.5,2],
+  ["VPA 3700","Ceramics",0.5,3],["VPA 3702","Communication Arts",0.5,3],
+  ["VPA 3701","Printmaking",0.5,3],["VPA 3703","Photography",0.5,3],
+  ["VPA 4700","Advanced Studio Art",1,4],
+  ["VPA 5700","AP Studio Art: Drawing",1,5],["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
+  ["PE 1802","Wellness 9",0.5,1],["PE 2802","Wellness 10",1,2],["PE 3805","Wellness 11/12",0.5,3],
+  ["PE 3801","Strength Training and Conditioning",0.5,3],["PE 3803","Lifeguard Training",0.5,3],
+  ["PE 3804","Personal Fitness",0.5,3],
+  ["IND 1002","Skills for Literacy",0.5,1],["IND 1004","Skills for Success",0.5,1],["IND 1005","Skills for Communication",0.5,1],
+  ["IND 1003","Teaching Intern",0.5,1],["IND 4000","Independent Inquiry",0.5,4],
+  ["IND 4001","Global Online Academy (GOA)",0.5,4],
+  ["IND 6000","IMPACT Seminar",1,6],["IND 6001","IMPACT Capstone: Element in Action",1,6],
+];
+
+/* ===== Multi-framework selection =====
+   Each year of a student's plan maps to the framework in effect that year,
+   based on their graduation year. Years we don't have data for are clamped
+   to the nearest available framework (future/planning → newest = 2026–27). */
+const FRAMEWORKS = { "2026-27": COURSES_2627, "2025-26": COURSES_2526, "2024-25": COURSES_2425, "2023-24": COURSES_2324 };
+const NEWEST_FW = "2026-27";
+const FRAMEWORK_KEYS = Object.keys(FRAMEWORKS);
+const fwFall = k => parseInt(k.slice(0,4), 10);
+
+function frameworkForYear(yearName) {
+  const gradStr = (document.getElementById('gradYear').value || '').trim();
+  const grad = parseInt(gradStr, 10);
+  if (!grad || gradStr.length < 4) return NEWEST_FW;     // no/partial grad year → newest
+  const gi = YEARS.indexOf(yearName);                    // 0 Freshman … 3 Senior
+  const fall = grad - 4 + gi;                             // fall start year of that grade
+  const falls = FRAMEWORK_KEYS.map(fwFall).sort((a,b)=>a-b);
+  const clamped = Math.min(Math.max(fall, falls[0]), falls[falls.length-1]);
+  return FRAMEWORK_KEYS.find(k => fwFall(k) === clamped) || NEWEST_FW;
+}
+function getCourseList() { return FRAMEWORKS[frameworkForYear(currentYear)] || COURSES_2627; }
+function updateFwLabel() {
+  const el = document.getElementById('fwLabel'); if (!el) return;
+  if (!(document.getElementById('gradYear').value || '').trim()) {
+    el.innerHTML = `Select your <b>Class of …</b> (top right) to load the correct course list.`;
+    return;
+  }
+  el.innerHTML = `Showing <b>${currentYear}</b> courses from the <b>${frameworkForYear(currentYear)}</b> framework.`;
+}
 const PASS_FAIL = new Set(["Design Products","Design with Code","Design with Physical Computing & Robotics","Art Foundations","Idea to Object: Digital Fabrication","Digital Filmmaking 1","Acting 1","Stagecraft","Lifeguard Training"]);
 const GRADUATION_CREDITS = 24;
 const GRADE_POINTS = {"A+":4.0,"A":4.0,"A-":3.67,"B+":3.33,"B":3.0,"B-":2.67,"C+":2.33,"C":2.0,"C-":1.67,"D+":1.33,"D":1.0,"D-":0.67,"F":0.0};
@@ -419,12 +669,12 @@ const YEARS = ["Freshman","Sophomore","Junior","Senior"];
 
 /* Graduation-required courses auto-loaded per year (by course ID) */
 const REQUIRED = {
-  "Freshman":  ["ENG 1000","SOC 1100","SCI 1300"], // English 9, Foundations of the Modern World, Biology
-  "Sophomore": ["ENG 2000","PE 2802"],                        // English 10, Wellness 10
-  "Junior":    ["DLS 5800"],                                  // Deep Learning Seminar I
-  "Senior":    ["DLS 5801"],                                  // Deep Learning Seminar 2
+  "Freshman":  [],
+  "Sophomore": [],
+  "Junior":    [],
+  "Senior":    [],
 };
-const COURSE_BY_ID = Object.fromEntries(COURSES.map(c => [c[0], c]));
+const COURSE_BY_ID = Object.fromEntries(COURSES_2627.map(c => [c[0], c]));
 
 /* ============================================================
    GRADUATION REQUIREMENT CLASSIFICATION
@@ -440,7 +690,7 @@ function deptOf(id) {
 const ENGLISH_EXTRA = new Set(["ENG 5050"]);
 
 // Science: physical vs life
-const PHYSICAL_SCI = new Set(["SCI 2301","SCI 3303","SCI 3302","SCI 4301","SCI 4303","SCI 5300","SCI 5302","SCI 5304"]);
+const PHYSICAL_SCI = new Set(["SCI 2301","SCI 2302","SCI 3303","SCI 3302","SCI 4301","SCI 4303","SCI 5300","SCI 5302","SCI 5304"]);
 const LIFE_SCI     = new Set(["SCI 1300","SCI 4300","SCI 4304","SCI 5301","SCI 6300"]);
 
 // Design & Innovation buckets
@@ -495,13 +745,15 @@ document.getElementById('yearPicker').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   currentYear = b.dataset.year;
   document.querySelectorAll('#yearPicker button').forEach(x => x.classList.toggle('sel', x === b));
+  updateFwLabel();
+  if (searchEl.value) searchEl.dispatchEvent(new Event('input'));
 });
 
 searchEl.addEventListener('input', () => {
   const q = searchEl.value.toLowerCase().trim();
   resultsEl.innerHTML = '';
   if (!q) return;
-  const matches = COURSES.filter(c => c[1].toLowerCase().includes(q) || c[0].toLowerCase().includes(q)).slice(0,12);
+  const matches = getCourseList().filter(c => c[1].toLowerCase().includes(q) || c[0].toLowerCase().includes(q)).slice(0,12);
   if (!matches.length) { resultsEl.innerHTML = `<div class="list-item"><div class="meta"><div class="body-medium" style="color:var(--md-on-surface-variant)">No matches found</div></div></div>`; return; }
   matches.forEach(c => {
     const [id,name,credits,level] = c;
@@ -526,6 +778,10 @@ searchEl.addEventListener('input', () => {
 
 function addClass(c) {
   const [id,name,credits,level] = c;
+  if (!(document.getElementById('gradYear').value || '').trim()) {
+    showAlert("Pick your graduation year in the top-right first. That tells the planner which year's course list applies to each grade level.");
+    return;
+  }
   if (REQUIRED_IDS.has(id)) { showSnack(`${name} is required and is already in your plan`); return; }
   const passFail = PASS_FAIL.has(name);
   enrolled.push({ uid: nextUid(), id,name,credits,level,passFail, year: currentYear, required: false,
@@ -550,6 +806,53 @@ function computeGPA(list) {
   return { uw, w, credits: cr };
 }
 function standing(g){if(g>=3.67)return"A range — Excellent!";if(g>=3.0)return"B range — Good";if(g>=2.0)return"C range — Satisfactory";if(g>=1.0)return"D range — Poor";return"F range — Failing";}
+
+/* ---- Drag-and-drop: reorder classes WITHIN their own year only ---- */
+let dragUid = null;
+function clearDropMarks(){ document.querySelectorAll('.class-row.drop-before,.class-row.drop-after').forEach(r=>r.classList.remove('drop-before','drop-after')); }
+function dropAfterTarget(row, clientY){ const r=row.getBoundingClientRect(); return (clientY - r.top) > r.height/2; }
+function onRowDragStart(e){
+  dragUid = e.currentTarget.dataset.uid;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', dragUid); } catch(_){}
+}
+function onRowDragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  e.currentTarget.draggable = false;
+  dragUid = null; clearDropMarks();
+}
+function sameYearAsDrag(row){
+  const dragged = enrolled.find(x => x.uid === dragUid);
+  return dragged && dragged.year === row.dataset.year;
+}
+function onRowDragOver(e){
+  const row = e.currentTarget;
+  if (!sameYearAsDrag(row)) { e.dataTransfer.dropEffect = 'none'; return; }
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const after = dropAfterTarget(row, e.clientY);
+  row.classList.toggle('drop-after', after);
+  row.classList.toggle('drop-before', !after);
+}
+function onRowDragLeave(e){ e.currentTarget.classList.remove('drop-before','drop-after'); }
+function onRowDrop(e){
+  const row = e.currentTarget;
+  if (!sameYearAsDrag(row) || dragUid === row.dataset.uid) { clearDropMarks(); return; }
+  e.preventDefault();
+  const after = dropAfterTarget(row, e.clientY);
+  reorderWithinYear(dragUid, row.dataset.uid, after);
+  render();
+}
+function reorderWithinYear(fromUid, targetUid, after){
+  const di = enrolled.findIndex(e => e.uid === fromUid);
+  if (di < 0) return;
+  const dragged = enrolled.splice(di, 1)[0];
+  let ti = enrolled.findIndex(e => e.uid === targetUid);
+  if (ti < 0) { enrolled.splice(di, 0, dragged); return; }
+  if (after) ti++;
+  enrolled.splice(ti, 0, dragged);
+}
 
 function render() {
   const wrap = document.getElementById('yearSections');
@@ -589,6 +892,8 @@ function render() {
       list.forEach(e => {
         const row = document.createElement('div');
         row.className = 'class-row';
+        row.dataset.uid = e.uid;
+        row.dataset.year = e.year;
         const crLabel = e.credits===1?'1 credit':'½ credit';
         const lvlLabel = e.level>=5?' · AP/College':'';
         let control;
@@ -602,16 +907,15 @@ function render() {
             <option value="${PLANNED}" ${e.grade===PLANNED?'selected':''}>Planned</option>
             ${GRADE_ORDER.map(x=>`<option value="${x}" ${e.grade===x?'selected':''}>${x}</option>`).join('')}</select>`;
         }
-        const yearSel = `<select class="year-select" data-uid="${e.uid}" title="Move to year" ${e.required?'disabled':''}>
-          ${YEARS.map(y=>`<option value="${y}" ${e.year===y?'selected':''}>${y.slice(0,2)}</option>`).join('')}</select>`;
         const reqLabel = e.required ? ' · <b style="color:var(--md-primary)">Required</b>' : '';
         const deleteBtn = e.required
           ? `<span class="icon-btn" title="Required course — cannot remove" style="color:var(--md-outline-variant);cursor:default;"><span class="material-symbols-rounded">lock</span></span>`
           : `<button class="icon-btn" title="Remove" data-remove="${e.uid}"><span class="material-symbols-rounded">delete</span></button>`;
         row.innerHTML = `
+          <span class="drag-handle" title="Drag to reorder within ${e.year}"><span class="material-symbols-rounded">drag_indicator</span></span>
           <div class="info"><div class="name body-large">${e.name}</div>
           <div class="detail label-medium">${e.id} · ${crLabel}${lvlLabel}${e.passFail?' · Pass/Fail':''}${reqLabel}</div></div>
-          ${yearSel}${control}
+          ${control}
           ${deleteBtn}`;
         card.appendChild(row);
       });
@@ -623,8 +927,21 @@ function render() {
   // wire controls
   wrap.querySelectorAll('.grade-select').forEach(s=>s.onchange=()=>{const e=enrolled.find(x=>x.uid===s.dataset.uid);if(e){e.grade=s.value;render();}});
   wrap.querySelectorAll('.pf-select').forEach(s=>s.onchange=()=>{const e=enrolled.find(x=>x.uid===s.dataset.uid);if(e){e.result=s.value;render();}});
-  wrap.querySelectorAll('.year-select').forEach(s=>s.onchange=()=>{const e=enrolled.find(x=>x.uid===s.dataset.uid);if(e){e.year=s.value;render();}});
   wrap.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeClass(b.dataset.remove));
+
+  // drag-and-drop reordering (within the same year only)
+  wrap.querySelectorAll('.class-row').forEach(row => {
+    const handle = row.querySelector('.drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', () => { row.draggable = true; });
+      handle.addEventListener('mouseup',   () => { row.draggable = false; });
+    }
+    row.addEventListener('dragstart', onRowDragStart);
+    row.addEventListener('dragend',   onRowDragEnd);
+    row.addEventListener('dragover',  onRowDragOver);
+    row.addEventListener('dragleave', onRowDragLeave);
+    row.addEventListener('drop',      onRowDrop);
+  });
 
   renderRequirements();
   computeCumulative();
@@ -727,7 +1044,13 @@ function checkRequirements() {
 
   // same language, 2 credits
   const langTot = {};
-  enrolled.forEach(e => { const f = langFamily(e.id); if (!f) return; if (securedState(e)==="none") return; langTot[f]=(langTot[f]||0)+e.credits; });
+  enrolled.forEach(e => {
+    if (deptOf(e.id) !== "World Languages" || securedState(e) === "none") return;
+    const n = e.name;
+    const f = /Chinese/i.test(n) ? "Chinese" : /Spanish/i.test(n) ? "Spanish" : /Japanese/i.test(n) ? "Japanese" : null;
+    if (!f) return;
+    langTot[f] = (langTot[f]||0) + e.credits;
+  });
   const sameLangOK = Object.values(langTot).some(v => v >= 2);
   rule(sameLangOK, "You need 2 credits of the same world language.");
 
@@ -820,6 +1143,11 @@ const saveModal = document.getElementById('saveModal');
 document.getElementById('saveBtn').onclick = () => saveModal.classList.remove('hidden');
 document.getElementById('saveCancel').onclick = () => saveModal.classList.add('hidden');
 saveModal.onclick = (e) => { if (e.target === saveModal) saveModal.classList.add('hidden'); };
+
+const alertModal = document.getElementById('alertModal');
+function showAlert(msg) { document.getElementById('alertMsg').textContent = msg; alertModal.classList.remove('hidden'); }
+document.getElementById('alertOk').onclick = () => alertModal.classList.add('hidden');
+alertModal.onclick = (e) => { if (e.target === alertModal) alertModal.classList.add('hidden'); };
 document.querySelectorAll('.save-opt').forEach(b => b.onclick = () => {
   saveModal.classList.add('hidden');
   generatePDF(b.dataset.mode);   // 'both' or 'planner'
@@ -986,21 +1314,9 @@ function loadState(){
     if(!raw) return;
     const data = JSON.parse(raw);
     if(Array.isArray(data.enrolled)){
-      enrolled = data.enrolled;
-      // reconcile lock status with the CURRENT required list
-      // (so a course removed from REQUIRED no longer shows as locked)
-      enrolled.forEach(e => { e.required = REQUIRED_IDS.has(e.id); });
-      // make sure any required courses still exist (handles version changes)
-      const have = new Set(enrolled.filter(e=>e.required).map(e=>e.id));
-      for(const year of YEARS){
-        for(const id of (REQUIRED[year]||[])){
-          if(!have.has(id)){
-            const c = COURSE_BY_ID[id];
-            if(c){ const [cid,name,credits,level]=c; const pf=PASS_FAIL.has(name);
-              enrolled.push({uid:nextUid(),id:cid,name,credits,level,passFail:pf,year,required:true,grade:pf?null:PLANNED,result:pf?PLANNED:null}); }
-          }
-        }
-      }
+      // drop any previously auto-loaded/locked courses (feature removed)
+      enrolled = data.enrolled.filter(e => !e.required);
+      enrolled.forEach(e => { e.required = false; });
       // restore uid counter so new adds don't collide
       let maxU = 0;
       enrolled.forEach(e=>{ if(!e.uid) e.uid = nextUid(); else { const n=parseInt(String(e.uid).replace(/\D/g,''),10); if(n>maxU) maxU=n; } });
@@ -1016,8 +1332,9 @@ function loadState(){
 }
 
 // keep graduation year numeric + persist header fields
-document.getElementById('gradYear').addEventListener('input', e => {
-  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+document.getElementById('gradYear').addEventListener('change', () => {
+  updateFwLabel();
+  if (searchEl.value) searchEl.dispatchEvent(new Event('input'));
   saveState();
 });
 document.getElementById('studentName').addEventListener('input', saveState);
@@ -1026,6 +1343,7 @@ document.getElementById('studentName').addEventListener('input', saveState);
 document.getElementById('brandLogo').src = LOGO_DATA;
 
 loadState();
+updateFwLabel();
 render();
 
 </script>
