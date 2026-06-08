@@ -262,8 +262,8 @@ body{background:var(--bg);background-attachment:fixed}
 .field:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 28%, transparent)}
 
 /* Search results */
-.results{margin-top:10px;display:flex;flex-direction:column;gap:3px}
-.list-item{border-radius:14px;transition:background .15s,transform .15s}
+.results{margin-top:10px;display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;padding-right:2px}
+.list-item{border-radius:14px;transition:background .15s,transform .15s;flex:0 0 auto}
 .list-item:hover{transform:translateX(3px)}
 .list-item .icon-wrap{border-radius:12px}
 
@@ -1048,7 +1048,7 @@ searchEl.addEventListener('input', () => {
   const q = searchEl.value.toLowerCase().trim();
   resultsEl.innerHTML = '';
   if (!q) return;
-  const matches = getCourseList().filter(c => c[1].toLowerCase().includes(q) || c[0].toLowerCase().includes(q)).slice(0,12);
+  const matches = getCourseList().filter(c => c[1].toLowerCase().includes(q) || c[0].toLowerCase().includes(q)).slice(0,30);
   if (!matches.length) { resultsEl.innerHTML = `<div class="list-item"><div class="meta"><div class="body-medium" style="color:var(--md-on-surface-variant)">No matches found</div></div></div>`; return; }
   matches.forEach(c => {
     const [id,name,credits,level] = c;
@@ -1210,8 +1210,9 @@ function render() {
           ? `<span class="icon-btn" title="Required course — cannot remove" style="color:var(--md-outline-variant);cursor:default;"><span class="material-symbols-rounded">lock</span></span>`
           : `<button class="icon-btn" title="Remove" data-remove="${e.uid}"><span class="material-symbols-rounded">delete</span></button>`;
         const open = strandOpen.has(e.uid);
-        const expander = e.passFail ? '' :
-          `<button class="icon-btn strand-toggle" data-uid="${e.uid}" title="Grade by strands"><span class="material-symbols-rounded">${open?'expand_less':'tune'}</span></button>`;
+        const expander = e.passFail
+          ? `<span class="icon-btn" style="visibility:hidden;pointer-events:none" aria-hidden="true"></span>`
+          : `<button class="icon-btn strand-toggle" data-uid="${e.uid}" title="Grade by strands"><span class="material-symbols-rounded">${open?'expand_less':'tune'}</span></button>`;
         row.innerHTML = `
           <span class="drag-handle" title="Drag to reorder within ${e.year}"><span class="material-symbols-rounded">drag_indicator</span></span>
           <span class="dept-badge" style="--c:${dm.c}"><span class="material-symbols-rounded">${dm.i}</span></span>
