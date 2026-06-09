@@ -11,17 +11,17 @@
   gtag('js', new Date());
   gtag('config', 'G-LN65FZCGM1');
 </script>
-<title>ASIJ GPA Calculator & Planner</title>
+<title>ASIJ GPA Calculator &amp; Planner</title>
 <meta name="description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
 <meta name="robots" content="index, follow">
 <!-- Open Graph (Facebook, iMessage, Slack, Discord, LinkedIn, etc.) -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="ASIJ GPA Calculator & Planner">
-<meta property="og:title" content="ASIJ GPA Calculator & Planner">
+<meta property="og:site_name" content="ASIJ GPA Calculator &amp; Planner">
+<meta property="og:title" content="ASIJ GPA Calculator &amp; Planner">
 <meta property="og:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
 <!-- Twitter / X -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ASIJ GPA Calculator & Planner">
+<meta name="twitter:title" content="ASIJ GPA Calculator &amp; Planner">
 <meta name="twitter:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -440,7 +440,7 @@ main,header{position:relative;z-index:1}
 <header class="top-app-bar">
   <div class="leading-icon"><img id="brandLogo" alt="ASIJ logo"></div>
   <div class="title">
-    <div class="title-large">ASIJ GPA Calculator & Planner</div>
+    <div class="title-large">ASIJ GPA Calculator &amp; Planner</div>
   </div>
   <div class="student-fields">
     <input id="studentName" class="hdr-input" type="text" placeholder="Your name" autocomplete="off">
@@ -894,6 +894,7 @@ const GRADE_POINTS = {"A+":4.0,"A":4.0,"A-":3.67,"B+":3.33,"B":3.0,"B-":2.67,"C+
 const GRADE_ORDER = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","D-","F"];
 const PLANNED = "Planned";
 const YEARS = ["Freshman","Sophomore","Junior","Senior"];
+const escAttr = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 /* ---- Strand-based proficiency grading (ASIJ Proficiency Scale) ---- */
 const STRAND_POINTS = { E:4, PH:3.5, P:3, AH:2.5, A:2, B:1, I:0 };
@@ -973,18 +974,6 @@ const DESIGN_REQ       = new Set(["DI 1900","DI 1901","DI 1902","DI 5900"]); // 
 const STUDY_US    = new Set(["SOC 4100","SOC 5101","SOC 4101"]); // US History, AP US History, Race & Ethnic Studies
 const STUDY_JAPAN = new Set(["SOC 3101","SOC 6100","MDL 1502","MDL 2502","MDL 3502","MDL 4502","MDL 5502","MDL 6502","MDL 6503","MDL 6504","MDL 6505","MDL 6506","MDL 6507","MDL 6508"]); // Japan Studies, Japan Seminar, any Japanese
 
-// World language family (for "same language, 2 credits")
-function langFamily(id) {
-  if (!id.startsWith("MDL")) return null;
-  const c = COURSE_BY_ID[id];
-  if (!c) return null;
-  const name = c[1];
-  if (/Chinese/i.test(name)) return "Chinese";
-  if (/Spanish/i.test(name)) return "Spanish";
-  if (/Japanese/i.test(name)) return "Japanese";
-  return "Other";
-}
-
 let uidCounter = 0;
 const nextUid = () => `u${++uidCounter}`;
 
@@ -1017,7 +1006,7 @@ function strandPanelHTML(e){
     const names = e.strandNames||[], levels = e.strandLevels||[];
     let nameCells='', levelCells='';
     for(let i=0;i<e.strandCount;i++){
-      nameCells += `<td><input class="strand-name" data-uid="${e.uid}" data-i="${i}" placeholder="Insert strand name" value="${(names[i]||'').replace(/"/g,'&quot;')}"></td>`;
+      nameCells += `<td><input class="strand-name" data-uid="${e.uid}" data-i="${i}" placeholder="Insert strand name" value="${escAttr(names[i])}"></td>`;
       const opts = `<option value="">—</option>` + STRAND_OPTIONS.map(([v])=>`<option value="${v}" ${levels[i]===v?'selected':''}>${v}</option>`).join('');
       levelCells += `<td><select class="strand-level" data-uid="${e.uid}" data-i="${i}">${opts}</select></td>`;
     }
@@ -1457,16 +1446,17 @@ function renderRequirements() {
 
 function animateNumber(el, to) {
   if (!el) return;
+  if (el._raf) cancelAnimationFrame(el._raf);   // cancel any in-flight animation on this element
   const from = parseFloat(el.textContent) || 0;
-  if (Math.abs(from - to) < 0.005) { el.textContent = to.toFixed(2); return; }
+  if (Math.abs(from - to) < 0.005) { el.textContent = to.toFixed(2); el._raf = null; return; }
   const dur = 650, t0 = performance.now();
   function step(t) {
     const k = Math.min((t - t0) / dur, 1);
     const eased = k * (2 - k);
     el.textContent = (from + (to - from) * eased).toFixed(2);
-    if (k < 1) requestAnimationFrame(step);
+    el._raf = k < 1 ? requestAnimationFrame(step) : null;
   }
-  requestAnimationFrame(step);
+  el._raf = requestAnimationFrame(step);
 }
 
 function computeCumulative() {
@@ -1665,7 +1655,7 @@ let st;function showSnack(m){const sb=document.getElementById('snackbar');sb.tex
 
 // ---- Persistence: remember this person's plan on their device ----
 const STORAGE_KEY = 'asij_gpa_planner_v1';
-function saveState(){
+function persistNow(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       enrolled,
@@ -1675,6 +1665,12 @@ function saveState(){
     }));
   }catch(e){ /* storage unavailable — app still works without saving */ }
 }
+// Debounced: avoids a synchronous JSON.stringify + localStorage write on every
+// keystroke/render. Pending writes are flushed before the page is hidden/closed.
+let _saveTimer = null;
+function saveState(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(persistNow, 250); }
+window.addEventListener('beforeunload', persistNow);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistNow(); });
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
