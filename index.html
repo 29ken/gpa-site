@@ -11,17 +11,17 @@
   gtag('js', new Date());
   gtag('config', 'G-LN65FZCGM1');
 </script>
-<title>ASIJ GPA Calculator &amp; Planner</title>
+<title>ASIJ GPA Calculator & Planner</title>
 <meta name="description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
 <meta name="robots" content="index, follow">
 <!-- Open Graph (Facebook, iMessage, Slack, Discord, LinkedIn, etc.) -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="ASIJ GPA Calculator &amp; Planner">
-<meta property="og:title" content="ASIJ GPA Calculator &amp; Planner">
+<meta property="og:site_name" content="ASIJ GPA Calculator & Planner">
+<meta property="og:title" content="ASIJ GPA Calculator & Planner">
 <meta property="og:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
 <!-- Twitter / X -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ASIJ GPA Calculator &amp; Planner">
+<meta name="twitter:title" content="ASIJ GPA Calculator & Planner">
 <meta name="twitter:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -440,7 +440,7 @@ main,header{position:relative;z-index:1}
 <header class="top-app-bar">
   <div class="leading-icon"><img id="brandLogo" alt="ASIJ logo"></div>
   <div class="title">
-    <div class="title-large">ASIJ GPA Calculator &amp; Planner</div>
+    <div class="title-large">ASIJ GPA Calculator & Planner</div>
   </div>
   <div class="student-fields">
     <input id="studentName" class="hdr-input" type="text" placeholder="Your name" autocomplete="off">
@@ -894,7 +894,6 @@ const GRADE_POINTS = {"A+":4.0,"A":4.0,"A-":3.67,"B+":3.33,"B":3.0,"B-":2.67,"C+
 const GRADE_ORDER = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","D-","F"];
 const PLANNED = "Planned";
 const YEARS = ["Freshman","Sophomore","Junior","Senior"];
-const escAttr = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 /* ---- Strand-based proficiency grading (ASIJ Proficiency Scale) ---- */
 const STRAND_POINTS = { E:4, PH:3.5, P:3, AH:2.5, A:2, B:1, I:0 };
@@ -974,6 +973,18 @@ const DESIGN_REQ       = new Set(["DI 1900","DI 1901","DI 1902","DI 5900"]); // 
 const STUDY_US    = new Set(["SOC 4100","SOC 5101","SOC 4101"]); // US History, AP US History, Race & Ethnic Studies
 const STUDY_JAPAN = new Set(["SOC 3101","SOC 6100","MDL 1502","MDL 2502","MDL 3502","MDL 4502","MDL 5502","MDL 6502","MDL 6503","MDL 6504","MDL 6505","MDL 6506","MDL 6507","MDL 6508"]); // Japan Studies, Japan Seminar, any Japanese
 
+// World language family (for "same language, 2 credits")
+function langFamily(id) {
+  if (!id.startsWith("MDL")) return null;
+  const c = COURSE_BY_ID[id];
+  if (!c) return null;
+  const name = c[1];
+  if (/Chinese/i.test(name)) return "Chinese";
+  if (/Spanish/i.test(name)) return "Spanish";
+  if (/Japanese/i.test(name)) return "Japanese";
+  return "Other";
+}
+
 let uidCounter = 0;
 const nextUid = () => `u${++uidCounter}`;
 
@@ -1006,7 +1017,7 @@ function strandPanelHTML(e){
     const names = e.strandNames||[], levels = e.strandLevels||[];
     let nameCells='', levelCells='';
     for(let i=0;i<e.strandCount;i++){
-      nameCells += `<td><input class="strand-name" data-uid="${e.uid}" data-i="${i}" placeholder="Insert strand name" value="${escAttr(names[i])}"></td>`;
+      nameCells += `<td><input class="strand-name" data-uid="${e.uid}" data-i="${i}" placeholder="Insert strand name" value="${(names[i]||'').replace(/"/g,'&quot;')}"></td>`;
       const opts = `<option value="">—</option>` + STRAND_OPTIONS.map(([v])=>`<option value="${v}" ${levels[i]===v?'selected':''}>${v}</option>`).join('');
       levelCells += `<td><select class="strand-level" data-uid="${e.uid}" data-i="${i}">${opts}</select></td>`;
     }
@@ -1446,17 +1457,16 @@ function renderRequirements() {
 
 function animateNumber(el, to) {
   if (!el) return;
-  if (el._raf) cancelAnimationFrame(el._raf);   // cancel any in-flight animation on this element
   const from = parseFloat(el.textContent) || 0;
-  if (Math.abs(from - to) < 0.005) { el.textContent = to.toFixed(2); el._raf = null; return; }
+  if (Math.abs(from - to) < 0.005) { el.textContent = to.toFixed(2); return; }
   const dur = 650, t0 = performance.now();
   function step(t) {
     const k = Math.min((t - t0) / dur, 1);
     const eased = k * (2 - k);
     el.textContent = (from + (to - from) * eased).toFixed(2);
-    el._raf = k < 1 ? requestAnimationFrame(step) : null;
+    if (k < 1) requestAnimationFrame(step);
   }
-  el._raf = requestAnimationFrame(step);
+  requestAnimationFrame(step);
 }
 
 function computeCumulative() {
@@ -1549,26 +1559,34 @@ function generatePDF(mode) {
   doc.text(nameVal, L, 143);
   doc.text(yearVal || "—", R, 143, { align: "right" });
 
-  // ---------- Year boxes (2x2) — auto-fit to ONE page ----------
+  // ---------- Year boxes (2x2) — wrap long names, auto-fit to ONE page ----------
   const boxW = (R - L - 16) / 2, colGap = 16, rowGap = 14;
-  const HEADER_H = 26, FIRST_ROW = 48, BASE = 68;   // BASE = header+top+bottom padding
+  const HEADER_H = 26;
   const startY = 162, footerTop = 744, sumH = 58, sumGap = 16;
   const today = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
 
   const lists = YEARS.map(yr => enrolled.filter(e => e.year === yr));
-  const row1max = Math.max(lists[0].length, lists[1].length);
-  const row2max = Math.max(lists[2].length, lists[3].length);
-
   const boxesBottom = includeGPA ? footerTop - sumGap - sumH : footerTop;
   const avail = boxesBottom - startY;
-  const rowH = (maxN, step) => maxN > 0 ? BASE + (maxN - 1) * step : 70;
 
-  // largest row-step (≤24) that keeps everything on one page; floor 13
-  let step = 13;
-  for (let s = 24; s >= 13; s--) {
-    if (rowH(row1max, s) + rowGap + rowH(row2max, s) <= avail) { step = s; break; }
+  const nameWidth = boxW - 58;            // leave room for the grade mark on the right
+  const measureLines = (e, fs) => { doc.setFont(serif,"normal"); doc.setFontSize(fs); return doc.splitTextToSize(e.name, nameWidth); };
+  const boxHeight = (list, fs) => {
+    if (!list.length) return 70;
+    const lineH = fs * 1.28, gap = 7;
+    let total = 0;
+    list.forEach(e => { total += Math.min(measureLines(e, fs).length, 3) * lineH + gap; });
+    return HEADER_H + 12 + total + 4;
+  };
+
+  // largest font (≤10.5) that keeps both rows + GPA on one page; floor 7
+  let fs = 7;
+  for (let f = 10.5; f >= 7; f -= 0.5) {
+    const r1 = Math.max(boxHeight(lists[0], f), boxHeight(lists[1], f));
+    const r2 = Math.max(boxHeight(lists[2], f), boxHeight(lists[3], f));
+    if (r1 + rowGap + r2 <= avail) { fs = f; break; }
   }
-  const fs = step >= 22 ? 10.5 : step >= 19 ? 10 : step >= 16 ? 9.5 : step >= 14 ? 9 : 8.5;
+  const lineH = fs * 1.28, gap = 7;
 
   function drawBox(bx, by, h, year, list) {
     doc.setDrawColor(220); doc.setLineWidth(1); doc.rect(bx, by, boxW, h);
@@ -1587,25 +1605,28 @@ function generatePDF(mode) {
       doc.text("No classes planned", bx + 12, by + 52);
       return;
     }
-    let ry = by + FIRST_ROW;
+    let yTop = by + HEADER_H + 12;
     list.forEach(e => {
-      doc.setFont(serif, "normal"); doc.setFontSize(fs); doc.setTextColor(34, 34, 34);
-      let nm = e.name;
-      while (doc.getTextWidth(nm) > boxW - 70) nm = nm.slice(0, -1);
-      if (nm.length < e.name.length) nm = nm.slice(0, -1) + "…";
-      doc.text(nm, bx + 12, ry);
+      const lines = measureLines(e, fs).slice(0, 3);
+      const n = lines.length;
+      doc.setFont(serif, "normal"); doc.setFontSize(fs);
+      for (let i = 0; i < n; i++) {
+        doc.setTextColor(34, 34, 34);
+        doc.text(lines[i], bx + 12, yTop + lineH * 0.8 + i * lineH);
+      }
       const mk = includeGPA ? gradeMark(e) : "";
       if (mk) {
-        if (mk === "—") doc.setTextColor(180,180,180);
-        doc.text(mk, bx + boxW - 12, ry, { align: "right" });
+        if (mk === "—") doc.setTextColor(180,180,180); else doc.setTextColor(34,34,34);
+        doc.text(mk, bx + boxW - 12, yTop + lineH * 0.8, { align: "right" });
       }
+      yTop += n * lineH + gap;
       doc.setDrawColor(238); doc.setLineWidth(0.5);
-      doc.line(bx + 12, ry + step - 16, bx + boxW - 12, ry + step - 16);
-      ry += step;
+      doc.line(bx + 12, yTop - gap * 0.6, bx + boxW - 12, yTop - gap * 0.6);
     });
   }
 
-  const r1 = rowH(row1max, step), r2 = rowH(row2max, step);
+  const r1 = Math.max(boxHeight(lists[0], fs), boxHeight(lists[1], fs));
+  const r2 = Math.max(boxHeight(lists[2], fs), boxHeight(lists[3], fs));
   drawBox(L, startY, r1, YEARS[0], lists[0]);
   drawBox(L + boxW + colGap, startY, r1, YEARS[1], lists[1]);
   const row2Y = startY + r1 + rowGap;
@@ -1655,7 +1676,7 @@ let st;function showSnack(m){const sb=document.getElementById('snackbar');sb.tex
 
 // ---- Persistence: remember this person's plan on their device ----
 const STORAGE_KEY = 'asij_gpa_planner_v1';
-function persistNow(){
+function saveState(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       enrolled,
@@ -1665,12 +1686,6 @@ function persistNow(){
     }));
   }catch(e){ /* storage unavailable — app still works without saving */ }
 }
-// Debounced: avoids a synchronous JSON.stringify + localStorage write on every
-// keystroke/render. Pending writes are flushed before the page is hidden/closed.
-let _saveTimer = null;
-function saveState(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(persistNow, 250); }
-window.addEventListener('beforeunload', persistNow);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistNow(); });
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
