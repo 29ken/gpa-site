@@ -87,6 +87,10 @@ body{font-family:'Hanken Grotesk',sans-serif;background:var(--md-surface);color:
 .container{max-width:1320px;margin:0 auto;padding:16px 24px 120px}
 .layout{display:grid;grid-template-columns:minmax(360px,440px) minmax(0,1fr);gap:24px;align-items:start}
 .pane-left{position:sticky;top:80px}
+/* Board view: stack vertically — board full-width on top, controls below */
+.layout.board-layout{display:flex;flex-direction:column;gap:24px}
+.layout.board-layout .pane-right{order:0;width:100%}
+.layout.board-layout .pane-left{order:1;position:static;width:100%}
 @media (max-width:980px){
   .layout{grid-template-columns:1fr;}
   .pane-left{position:static;}
@@ -433,6 +437,35 @@ main,header{position:relative;z-index:1}
 .strand-result{margin-top:12px;font-size:14px}
 .strand-grade-pill{display:inline-block;background:#fec20b;color:#5a4300;border-radius:8px;padding:2px 11px;font-weight:800;margin-left:4px}
 @media (max-width:720px){ .strand-panel-wrap{padding-left:10px} }
+
+/* ---- Board (grid) view ---- */
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:960px){ .board{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:560px){ .board{grid-template-columns:1fr} }
+.board-col{padding:14px;display:flex;flex-direction:column}
+.board-pills{flex:1}
+.board-col-title{text-align:center;font-weight:700;font-size:16px;margin-bottom:14px;color:var(--md-on-surface)}
+.course-pill{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;padding:10px 28px 10px 12px;margin-bottom:10px;
+  border:none;border-radius:14px;cursor:pointer;font-family:'Hanken Grotesk';font-size:14.5px;font-weight:600;line-height:1.2;text-align:center;
+  background:color-mix(in srgb,var(--c) 22%, var(--md-surface-cont));color:color-mix(in srgb,var(--c) 60%, var(--md-on-surface));
+  transition:transform .12s, box-shadow .12s}
+.course-pill .cp-name{display:block}
+.course-pill .cp-grade{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;
+  background:color-mix(in srgb,var(--c) 75%, #000);color:#fff;border-radius:7px;padding:1px 7px;min-width:20px}
+.course-pill.empty{padding:10px 12px;background:var(--md-surface-cont-highest);color:var(--md-on-surface-variant);font-weight:500}
+.course-pill.empty:hover{background:color-mix(in srgb,var(--brand) 14%, var(--md-surface-cont-highest))}
+.course-pill:hover{transform:translateY(-1px);box-shadow:0 5px 14px -7px rgba(0,0,0,.4)}
+
+/* ---- Class editor popup ---- */
+.class-modal{max-width:440px;width:100%;text-align:left;max-height:88vh;overflow-y:auto}
+.cm-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.cm-head .cm-name{font-weight:700;font-size:17px;color:var(--md-on-surface);line-height:1.25}
+.cm-head .cm-sub{font-size:12.5px;color:var(--md-on-surface-variant);margin-top:2px}
+.cm-head .cm-close{margin-left:auto;flex:0 0 auto}
+.cm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.cm-foot{margin-top:16px;display:flex;justify-content:flex-end;border-top:1px solid var(--glass-brd);padding-top:12px}
+.cm-remove{color:#c0392b}
+.class-modal .strand-panel{margin-top:2px}
 </style>
 </head>
 <body>
@@ -547,7 +580,10 @@ main,header{position:relative;z-index:1}
   <div class="pane-right">
     <div class="row-between" style="margin:0 0 8px;">
       <div class="section-label label-large" style="margin:0;">Four-year plan</div>
-      <button class="btn text" id="saveBtn"><span class="material-symbols-rounded">download</span>Save as PDF</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn text" id="viewToggle"><span class="material-symbols-rounded">grid_view</span>Board view</button>
+        <button class="btn text" id="saveBtn"><span class="material-symbols-rounded">download</span>Save as PDF</button>
+      </div>
     </div>
     <div id="yearSections"></div>
   </div>
@@ -592,6 +628,8 @@ main,header{position:relative;z-index:1}
     <button class="btn filled" id="alertOk">Got it</button>
   </div>
 </div>
+
+<div id="classModal" class="modal-overlay hidden"><div class="modal-card" id="classModalCard"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1008,6 +1046,8 @@ function seedRequired() {
 
 let enrolled = seedRequired();
 let currentYear = "Freshman";
+let viewMode = 'list';            // 'list' | 'grid' (board)
+let classModalUid = null;         // uid of class shown in the board's popup editor
 let yearCollapsed = { Freshman:false, Sophomore:false, Junior:false, Senior:false };
 let strandOpen = new Set();
 function toggleStrand(uid){ if(strandOpen.has(uid)) strandOpen.delete(uid); else strandOpen.add(uid); render(); }
@@ -1157,9 +1197,109 @@ function reorderWithinYear(fromUid, targetUid, after){
   enrolled.splice(ti, 0, dragged);
 }
 
+/* ===================== Planner grid view ===================== */
+
+
+/* ---------- Board (grid) view + click-to-edit class popup ---------- */
+function renderGrid(wrap){
+  const board = document.createElement('div');
+  board.className = 'board';
+  YEARS.forEach(year => {
+    const list = enrolled.filter(e => e.year === year);
+    const col = document.createElement('div');
+    col.className = 'board-col card';
+    let pills = '';
+    list.forEach(e => {
+      const dm = DEPT_META[deptOf(e.id)] || DEPT_META['Elective'];
+      const mk = e.passFail
+        ? (e.result && e.result!==PLANNED ? e.result : '')
+        : (e.grade && e.grade!==PLANNED ? e.grade : '');
+      pills += `<button class="course-pill" data-uid="${e.uid}" style="--c:${dm.c}" title="${e.name.replace(/"/g,'&quot;')}"><span class="cp-name">${e.name}</span>${mk?`<span class="cp-grade">${mk}</span>`:''}</button>`;
+    });
+    const empties = Math.max(0, 8 - list.length);
+    for (let i=0;i<empties;i++) pills += `<button class="course-pill empty" data-add="${year}">Select Course</button>`;
+    col.innerHTML = `<div class="board-col-title">${year} Year</div>
+      <div class="board-pills">${pills}</div>`;
+    board.appendChild(col);
+  });
+  wrap.appendChild(board);
+
+  wrap.querySelectorAll('.course-pill[data-uid]').forEach(b=>b.onclick=()=>openClassModal(b.dataset.uid));
+  wrap.querySelectorAll('.course-pill[data-add]').forEach(b=>b.onclick=()=>{
+    currentYear = b.dataset.add;
+    document.querySelectorAll('#yearPicker button').forEach(x=>x.classList.toggle('sel', x.dataset.year===currentYear));
+    updateFwLabel();
+    const srch = document.getElementById('search');
+    if(srch){ srch.focus(); srch.scrollIntoView({behavior:'smooth', block:'center'}); }
+  });
+}
+
+function openClassModal(uid){ classModalUid = uid; render(); }
+function closeClassModal(){ classModalUid = null; render(); }
+
+function renderClassModal(){
+  const ov = document.getElementById('classModal');
+  if(!ov) return;
+  const e = enrolled.find(x => x.uid === classModalUid);
+  if(!e){ ov.classList.add('hidden'); ov.innerHTML=''; return; }
+  const dm = DEPT_META[deptOf(e.id)] || DEPT_META['Elective'];
+
+  const gradeCtl = e.passFail
+    ? `<select class="pf-select" data-uid="${e.uid}">
+         <option value="${PLANNED}" ${e.result===PLANNED?'selected':''}>Planned</option>
+         <option value="Pass" ${e.result==='Pass'?'selected':''}>Pass</option>
+         <option value="Fail" ${e.result==='Fail'?'selected':''}>Fail</option></select>`
+    : `<select class="grade-select" data-uid="${e.uid}">
+         <option value="${PLANNED}" ${e.grade===PLANNED?'selected':''}>Planned</option>
+         ${GRADE_ORDER.map(x=>`<option value="${x}" ${e.grade===x?'selected':''}>${x}</option>`).join('')}</select>`;
+
+  ov.innerHTML = `
+    <div class="modal-card class-modal">
+      <div class="cm-head">
+        <span class="dept-badge" style="--c:${dm.c}"><span class="material-symbols-rounded">${dm.i}</span></span>
+        <div><div class="cm-name">${e.name}</div>
+          <div class="cm-sub">${e.id} · ${e.credits} cr${e.passFail?' · Pass/Fail':''}</div></div>
+        <button class="icon-btn cm-close" title="Close"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="cm-row">
+        <span class="label-medium">${e.passFail?'Result':'Letter grade'}</span>
+        ${gradeCtl}
+      </div>
+      ${e.passFail ? '' : strandPanelHTML(e)}
+      <div class="cm-foot">
+        <button class="btn text cm-remove"><span class="material-symbols-rounded">delete</span>Remove class</button>
+      </div>
+    </div>`;
+  ov.classList.remove('hidden');
+
+  // wire (scoped to the modal)
+  ov.onclick = (ev)=>{ if(ev.target===ov) closeClassModal(); };
+  ov.querySelector('.cm-close').onclick = closeClassModal;
+  ov.querySelector('.cm-remove').onclick = ()=>{ classModalUid=null; removeClass(e.uid); };
+  ov.querySelectorAll('.grade-select').forEach(s=>s.onchange=()=>{ e.grade=s.value; if(e.strandCount){e.strandLevels=new Array(e.strandCount).fill('');} render(); });
+  ov.querySelectorAll('.pf-select').forEach(s=>s.onchange=()=>{ e.result=s.value; render(); });
+  ov.querySelectorAll('.strand-count').forEach(s=>s.onchange=()=>{
+    const c=parseInt(s.value,10);
+    if(!c){ e.strandCount=null; e.strandNames=[]; e.strandLevels=[]; }
+    else { e.strandCount=c;
+      e.strandNames=(e.strandNames||[]).slice(0,c); while(e.strandNames.length<c) e.strandNames.push('');
+      e.strandLevels=(e.strandLevels||[]).slice(0,c); while(e.strandLevels.length<c) e.strandLevels.push('');
+      syncStrandGrade(e); }
+    render();
+  });
+  ov.querySelectorAll('.strand-level').forEach(s=>s.onchange=()=>{ e.strandLevels=e.strandLevels||[]; e.strandLevels[+s.dataset.i]=s.value; syncStrandGrade(e); render(); });
+  ov.querySelectorAll('.strand-name').forEach(inp=>inp.oninput=()=>{ e.strandNames=e.strandNames||[]; e.strandNames[+inp.dataset.i]=inp.value; saveState(); });
+}
+
 function render() {
   const wrap = document.getElementById('yearSections');
   wrap.innerHTML = '';
+  document.getElementById('yearSections').classList.toggle('grid-mode', viewMode === 'grid');
+  const layoutEl = document.querySelector('.layout');
+  if (layoutEl) layoutEl.classList.toggle('board-layout', viewMode === 'grid');
+
+  if (viewMode === 'grid') { renderGrid(wrap); }
+  else {
 
   YEARS.forEach((year, yi) => {
     const list = enrolled.filter(e => e.year === year);
@@ -1285,6 +1425,15 @@ function render() {
     row.addEventListener('dragleave', onRowDragLeave);
     row.addEventListener('drop',      onRowDrop);
   });
+
+  } // end list-view branch
+
+  // view-toggle button label + class popup
+  const vt = document.getElementById('viewToggle');
+  if(vt) vt.innerHTML = viewMode==='grid'
+    ? '<span class="material-symbols-rounded">view_list</span>List view'
+    : '<span class="material-symbols-rounded">grid_view</span>Board view';
+  renderClassModal();
 
   renderRequirements();
   computeCumulative();
@@ -1683,6 +1832,7 @@ function saveState(){
       studentName: document.getElementById('studentName').value,
       gradYear: document.getElementById('gradYear').value,
       theme: document.documentElement.getAttribute('data-theme') || 'light',
+      viewMode,
     }));
   }catch(e){ /* storage unavailable — app still works without saving */ }
 }
@@ -1702,6 +1852,10 @@ function loadState(){
     }
     if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
     if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
+    if(data.viewMode==='grid' || data.viewMode==='list') viewMode = data.viewMode;
+    if(data.viewMode==='grid' || data.viewMode==='list'){
+      viewMode = data.viewMode;
+    }
     if(data.theme==='dark'){
       document.documentElement.setAttribute('data-theme','dark');
       themeBtn.querySelector('span').textContent='light_mode';
@@ -1716,6 +1870,12 @@ document.getElementById('gradYear').addEventListener('change', () => {
   saveState();
 });
 document.getElementById('studentName').addEventListener('input', saveState);
+
+document.getElementById('viewToggle').addEventListener('click', () => {
+  viewMode = (viewMode === 'grid') ? 'list' : 'grid';
+  classModalUid = null;
+  render();
+});
 
 // embed the brand logo (works offline)
 document.getElementById('brandLogo').src = LOGO_DATA;
