@@ -1069,7 +1069,6 @@ let enrolled = seedRequired();
 let currentYear = "Freshman";
 let viewMode = 'list';            // 'list' | 'grid' (board)
 let classModalUid = null;         // uid of class shown in the board's popup editor
-let freePeriods = { Freshman:{full:0,half:0}, Sophomore:{full:0,half:0}, Junior:{full:0,half:0}, Senior:{full:0,half:0} };  // board-view free periods per year
 let yearCollapsed = { Freshman:false, Sophomore:false, Junior:false, Senior:false };
 let strandOpen = new Set();
 function toggleStrand(uid){ if(strandOpen.has(uid)) strandOpen.delete(uid); else strandOpen.add(uid); render(); }
@@ -1158,12 +1157,20 @@ function removeClass(uid) {
   const c = enrolled.find(e => e.uid === uid);
   if (c && c.required) { showSnack(`${c.name} is required and can't be removed`); return; }
   enrolled = enrolled.filter(e => e.uid !== uid);
-  render(); if (c) showSnack(`Removed ${c.name}`);
+  render(); if (c) showSnack(c.isFree ? `Removed a ${c.freeHalf?'½ ':''}free period` : `Removed ${c.name}`);
+}
+
+// board-view free period: an ordered entry in `enrolled`, but with 0 credits and no academic effect
+function isHalfWidth(e){ return e && (e.isFree ? !!e.freeHalf : (e.credits || 1) < 1); }
+function addFree(year, half){
+  enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false,
+    year, required:false, grade: PLANNED, result:null, isFree:true, freeHalf:!!half });
+  render(); showSnack(`Added a ${half?'½ ':''}free period to ${year}`);
 }
 
 /* GPA over a list, ignoring planned + pass/fail */
 function computeGPA(list) {
-  const graded = list.filter(e => !e.passFail && e.grade !== PLANNED);
+  const graded = list.filter(e => !e.isFree && !e.passFail && e.grade !== PLANNED);
   if (!graded.length) return null;
   const cr = graded.reduce((s,e)=>s+e.credits,0);
   const uw = graded.reduce((s,e)=>s+GRADE_POINTS[e.grade]*e.credits,0)/cr;
@@ -1219,10 +1226,40 @@ function reorderWithinYear(fromUid, targetUid, after){
   enrolled.splice(ti, 0, dragged);
 }
 
-/* ---- Board pill drag: reorder within year AND within same credit type ---- */
-function sameYearAndTypeAsDrag(uid){
-  const a = enrolled.find(x=>x.uid===dragUid), b = enrolled.find(x=>x.uid===uid);
-  return a && b && a.year===b.year && (((a.credits||1)<1) === ((b.credits||1)<1));
+/* ---- Board pill drag: reorder within year.
+       Dragging a FULL-width item treats a pair of half-credit classes as ONE boxed row,
+       so it snaps above/below the whole pair (never splits it).
+       Dragging a HALF-width item only reorders among other half-width items. ---- */
+function dragDropAllowed(targetUid){
+  const a = enrolled.find(x=>x.uid===dragUid), b = enrolled.find(x=>x.uid===targetUid);
+  if(!a || !b || a.year!==b.year) return false;
+  if(isHalfWidth(a)) return isHalfWidth(b);   // dragging a half: only onto another half
+  return true;                                // dragging a full: onto any item in the year
+}
+// group a year's items into rows: full item = box of 1; two consecutive halves = a boxed pair
+function rowsForYear(year){
+  const items = enrolled.filter(e => e.year === year);
+  const boxes = []; let i = 0;
+  while (i < items.length){
+    if (isHalfWidth(items[i]) && i+1 < items.length && isHalfWidth(items[i+1])){ boxes.push([items[i].uid, items[i+1].uid]); i += 2; }
+    else { boxes.push([items[i].uid]); i += 1; }
+  }
+  return boxes;
+}
+function boxOf(year, uid){ return rowsForYear(year).find(b => b.includes(uid)) || [uid]; }
+function clearDropTargets(){ document.querySelectorAll('.course-pill.drop-target').forEach(p=>p.classList.remove('drop-target')); }
+// move the dragged full-width item before/after the WHOLE box that the target belongs to
+function moveFullToBox(fromUid, targetUid, after){
+  const dragged = enrolled.find(e => e.uid === fromUid); if(!dragged) return;
+  const box = boxOf(dragged.year, targetUid);
+  const anchorUid = after ? box[box.length-1] : box[0];
+  if (anchorUid === fromUid) return;
+  const di = enrolled.findIndex(e => e.uid === fromUid); if(di < 0) return;
+  enrolled.splice(di, 1);
+  let ti = enrolled.findIndex(e => e.uid === anchorUid);
+  if (ti < 0) { enrolled.splice(di, 0, dragged); return; }
+  if (after) ti++;
+  enrolled.splice(ti, 0, dragged);
 }
 function onPillDragStart(e){
   dragUid = e.currentTarget.dataset.uid;
@@ -1232,26 +1269,42 @@ function onPillDragStart(e){
 }
 function onPillDragEnd(e){
   e.currentTarget.classList.remove('dragging');
-  dragUid = null;
-  document.querySelectorAll('.course-pill.drop-target').forEach(p=>p.classList.remove('drop-target'));
+  dragUid = null; clearDropTargets();
 }
 function onPillDragOver(e){
   const pill = e.currentTarget;
-  if (!dragUid || pill.dataset.uid===dragUid || !sameYearAndTypeAsDrag(pill.dataset.uid)) { e.dataTransfer.dropEffect='none'; return; }
+  if (!dragUid || pill.dataset.uid===dragUid || !dragDropAllowed(pill.dataset.uid)) { e.dataTransfer.dropEffect='none'; return; }
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  pill.classList.add('drop-target');
+  clearDropTargets();
+  const dragged = enrolled.find(x=>x.uid===dragUid);
+  if (dragged && !isHalfWidth(dragged)){
+    // highlight the entire target row (box), since a full item moves around whole rows
+    const t = enrolled.find(x=>x.uid===pill.dataset.uid);
+    boxOf(t.year, pill.dataset.uid).forEach(uid=>{
+      const el = document.querySelector(`.course-pill[data-uid="${uid}"]`); if(el) el.classList.add('drop-target');
+    });
+  } else {
+    pill.classList.add('drop-target');
+  }
 }
-function onPillDragLeave(e){ e.currentTarget.classList.remove('drop-target'); }
+function onPillDragLeave(e){ /* cleared on next dragover/drop/end */ }
 function onPillDrop(e){
   const pill = e.currentTarget;
-  pill.classList.remove('drop-target');
-  if (!dragUid || pill.dataset.uid===dragUid || !sameYearAndTypeAsDrag(pill.dataset.uid)) return;
+  if (!dragUid || pill.dataset.uid===dragUid || !dragDropAllowed(pill.dataset.uid)) { clearDropTargets(); return; }
   e.preventDefault();
-  const isHalf = pill.classList.contains('half');
+  const dragged = enrolled.find(x=>x.uid===dragUid);
   const r = pill.getBoundingClientRect();
-  const after = isHalf ? (e.clientX - r.left) > r.width/2 : (e.clientY - r.top) > r.height/2;
-  reorderWithinYear(dragUid, pill.dataset.uid, after);
+  if (isHalfWidth(dragged)){
+    // half: reorder among halves; left/right within the shared row
+    const after = (e.clientX - r.left) > r.width/2;
+    reorderWithinYear(dragUid, pill.dataset.uid, after);
+  } else {
+    // full: snap above/below the WHOLE box (row); top/bottom of the row
+    const after = (e.clientY - r.top) > r.height/2;
+    moveFullToBox(dragUid, pill.dataset.uid, after);
+  }
+  clearDropTargets();
   render();
 }
 
@@ -1263,37 +1316,33 @@ function renderGrid(wrap){
   const board = document.createElement('div');
   board.className = 'board';
   YEARS.forEach(year => {
-    const list = enrolled.filter(e => e.year === year);
+    const list = enrolled.filter(e => e.year === year);   // classes + free periods, in order
     const col = document.createElement('div');
     col.className = 'board-col card';
-    const fp = freePeriods[year] || (freePeriods[year] = { full:0, half:0 });
-    const fullCls = list.filter(e => (e.credits || 1) >= 1);
-    const halfCls = list.filter(e => (e.credits || 1) < 1);
 
     const classPill = (e) => {
       const dm = DEPT_META[deptOf(e.id)] || DEPT_META['Elective'];
-      const half = (e.credits || 1) < 1;
+      const half = isHalfWidth(e);
       const mk = e.passFail
         ? (e.result && e.result!==PLANNED ? e.result : '')
         : (e.grade && e.grade!==PLANNED ? e.grade : '');
       return `<button class="course-pill${half?' half':''}" draggable="true" data-uid="${e.uid}" style="--c:${dm.c}" title="${e.name.replace(/"/g,'&quot;')}"><span class="cp-name">${e.name}</span>${mk?`<span class="cp-grade">${mk}</span>`:''}</button>`;
     };
-    const freePill = (type) =>
-      `<div class="course-pill free${type==='half'?' half':''}" title="Free period"><span class="cp-name">Free</span><button class="free-x" data-freex="${year}" data-fxtype="${type}" title="Remove free period"><span class="material-symbols-rounded">close</span></button></div>`;
+    const freePill = (e) =>
+      `<div class="course-pill free${isHalfWidth(e)?' half':''}" draggable="true" data-uid="${e.uid}" data-free="1" title="Free period"><span class="cp-name">Free</span><button class="free-x" data-freex="${e.uid}" title="Remove free period"><span class="material-symbols-rounded">close</span></button></div>`;
     const fullEmpty = `<button class="course-pill empty" data-add="${year}">Select Course</button>`;
     const halfEmpty = `<button class="course-pill empty half" data-add="${year}">Select Course</button>`;
 
-    // full-width items first (full classes, then full frees), then half-width (half classes, then half frees)
-    let pills = '';
-    fullCls.forEach(e => pills += classPill(e));
-    for (let i=0;i<fp.full;i++) pills += freePill('full');
-    halfCls.forEach(e => pills += classPill(e));
-    for (let i=0;i<fp.half;i++) pills += freePill('half');
-
-    let units = fullCls.length + fp.full + (halfCls.length + fp.half) * 0.5;
-    // pair a lone half-width item with a half add-slot
-    const halfWidthCount = halfCls.length + fp.half;
-    if (halfWidthCount % 2 === 1 && units + 0.5 <= 8) { pills += halfEmpty; units += 0.5; }
+    // render classes + frees in their actual order (full = full row, two halves share a row)
+    let pills = '', units = 0, halfCount = 0;
+    list.forEach(e => {
+      const half = isHalfWidth(e);
+      units += half ? 0.5 : 1;
+      if (half) halfCount++;
+      pills += e.isFree ? freePill(e) : classPill(e);
+    });
+    // pair a lone trailing half-width item with a half add-slot
+    if (halfCount % 2 === 1 && units + 0.5 <= 8) { pills += halfEmpty; units += 0.5; }
     let remaining = Math.max(0, 8 - units);
     while (remaining >= 1) { pills += fullEmpty; remaining -= 1; }
     if (remaining >= 0.5) { pills += halfEmpty; remaining -= 0.5; }
@@ -1308,8 +1357,12 @@ function renderGrid(wrap){
   });
   wrap.appendChild(board);
 
-  wrap.querySelectorAll('.course-pill[data-uid]').forEach(b=>{
+  // class pills: click opens editor; all draggable
+  wrap.querySelectorAll('.course-pill[data-uid]:not([data-free])').forEach(b=>{
     b.onclick = () => openClassModal(b.dataset.uid);
+  });
+  // every class/free pill is draggable
+  wrap.querySelectorAll('.course-pill[data-uid]').forEach(b=>{
     b.addEventListener('dragstart', onPillDragStart);
     b.addEventListener('dragend',   onPillDragEnd);
     b.addEventListener('dragover',  onPillDragOver);
@@ -1318,15 +1371,10 @@ function renderGrid(wrap){
   });
   wrap.querySelectorAll('.free-x[data-freex]').forEach(b=>b.onclick=(ev)=>{
     ev.stopPropagation();
-    const y=b.dataset.freex, t=b.dataset.fxtype;
-    if(freePeriods[y]) freePeriods[y][t]=Math.max(0,(freePeriods[y][t]||0)-1);
-    render(); showSnack(`Removed a ${t==='half'?'½ ':''}free period from ${y}`);
+    removeClass(b.dataset.freex);
   });
   wrap.querySelectorAll('.board-add-free[data-addfree]').forEach(b=>b.onclick=()=>{
-    const y=b.dataset.addfree, t=b.dataset.aftype;
-    if(!freePeriods[y]) freePeriods[y]={full:0,half:0};
-    freePeriods[y][t]=(freePeriods[y][t]||0)+1;
-    render(); showSnack(`Added a ${t==='half'?'½ ':''}free period to ${y}`);
+    addFree(b.dataset.addfree, b.dataset.aftype==='half');
   });
   wrap.querySelectorAll('.course-pill[data-add]').forEach(b=>b.onclick=()=>{
     currentYear = b.dataset.add;
@@ -1344,7 +1392,7 @@ function renderClassModal(){
   const ov = document.getElementById('classModal');
   if(!ov) return;
   const e = enrolled.find(x => x.uid === classModalUid);
-  if(!e){ ov.classList.add('hidden'); ov.innerHTML=''; return; }
+  if(!e || e.isFree){ ov.classList.add('hidden'); ov.innerHTML=''; classModalUid=null; return; }
   const dm = DEPT_META[deptOf(e.id)] || DEPT_META['Elective'];
 
   const gradeCtl = e.passFail
@@ -1405,7 +1453,7 @@ function render() {
   else {
 
   YEARS.forEach((year, yi) => {
-    const list = enrolled.filter(e => e.year === year);
+    const list = enrolled.filter(e => e.year === year && !e.isFree);
     const section = document.createElement('div');
     section.className = 'year-section';
     section.dataset.grade = ['9','10','11','12'][yi];
@@ -1817,7 +1865,7 @@ function generatePDF(mode) {
   const startY = 162, footerTop = 744, sumH = 58, sumGap = 16;
   const today = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
 
-  const lists = YEARS.map(yr => enrolled.filter(e => e.year === yr));
+  const lists = YEARS.map(yr => enrolled.filter(e => e.year === yr && !e.isFree));
   const boxesBottom = includeGPA ? footerTop - sumGap - sumH : footerTop;
   const avail = boxesBottom - startY;
 
@@ -1936,7 +1984,6 @@ function saveState(){
       gradYear: document.getElementById('gradYear').value,
       theme: document.documentElement.getAttribute('data-theme') || 'light',
       viewMode,
-      freePeriods,
     }));
   }catch(e){ /* storage unavailable — app still works without saving */ }
 }
@@ -1957,13 +2004,16 @@ function loadState(){
     if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
     if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
     if(data.viewMode==='grid' || data.viewMode==='list') viewMode = data.viewMode;
+    // migrate legacy free-period counts into ordered free entries (appended per year)
     if(data.freePeriods && typeof data.freePeriods==='object'){
+      const cap = n => { n=parseInt(n,10); return (Number.isFinite(n)&&n>0)?n:0; };
       YEARS.forEach(y=>{
         const v = data.freePeriods[y];
-        const cap = n => { n=parseInt(n,10); return (Number.isFinite(n)&&n>0)?n:0; };
-        if (typeof v === 'number') freePeriods[y] = { full: cap(v), half: 0 };      // old format
-        else if (v && typeof v === 'object') freePeriods[y] = { full: cap(v.full), half: cap(v.half) };
-        else freePeriods[y] = { full:0, half:0 };
+        let full=0, half=0;
+        if (typeof v === 'number') full = cap(v);
+        else if (v && typeof v === 'object') { full = cap(v.full); half = cap(v.half); }
+        for(let i=0;i<full;i++) enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:y, required:false, grade:PLANNED, result:null, isFree:true, freeHalf:false });
+        for(let i=0;i<half;i++) enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:y, required:false, grade:PLANNED, result:null, isFree:true, freeHalf:true });
       });
     }
     if(data.theme==='dark'){
