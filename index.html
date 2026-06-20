@@ -443,9 +443,9 @@ main,header{position:relative;z-index:1}
 @media (max-width:960px){ .board{grid-template-columns:repeat(2,1fr)} }
 @media (max-width:560px){ .board{grid-template-columns:1fr} }
 .board-col{padding:14px;display:flex;flex-direction:column}
-.board-pills{flex:1}
+.board-pills{flex:1;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
 .board-col-title{text-align:center;font-weight:700;font-size:16px;margin-bottom:14px;color:var(--md-on-surface)}
-.course-pill{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;padding:10px 28px 10px 12px;margin-bottom:10px;
+.course-pill{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 100%;min-height:50px;padding:10px 28px 10px 12px;
   border:none;border-radius:14px;cursor:pointer;font-family:'Hanken Grotesk';font-size:14.5px;font-weight:600;line-height:1.2;text-align:center;
   background:color-mix(in srgb,var(--c) 22%, var(--md-surface-cont));color:color-mix(in srgb,var(--c) 60%, var(--md-on-surface));
   transition:transform .12s, box-shadow .12s}
@@ -455,6 +455,27 @@ main,header{position:relative;z-index:1}
 .course-pill.empty{padding:10px 12px;background:var(--md-surface-cont-highest);color:var(--md-on-surface-variant);font-weight:500}
 .course-pill.empty:hover{background:color-mix(in srgb,var(--brand) 14%, var(--md-surface-cont-highest))}
 .course-pill:hover{transform:translateY(-1px);box-shadow:0 5px 14px -7px rgba(0,0,0,.4)}
+/* half-credit class: same height, half the width (two fit side by side) */
+.course-pill.half{flex:0 0 calc(50% - 5px);font-size:13px;padding:10px 22px 10px 10px}
+.course-pill.half .cp-grade{right:7px;font-size:11px;padding:1px 5px;min-width:16px}
+/* drag-to-reorder (within year + same credit type) */
+.course-pill[draggable="true"]{cursor:grab}
+.course-pill.dragging{opacity:.4;cursor:grabbing}
+.course-pill.drop-target{outline:2px dashed var(--brand);outline-offset:2px}
+/* free period block (with × remove) */
+.course-pill.free{background:color-mix(in srgb,var(--md-on-surface) 13%, var(--md-surface-cont));color:var(--md-on-surface);font-weight:700;padding:10px 30px 10px 12px;cursor:default}
+.course-pill.free.half{padding:10px 26px 10px 10px}
+.course-pill.free:hover{transform:none;box-shadow:none}
+.course-pill.free .free-x{position:absolute;top:50%;right:7px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;
+  width:20px;height:20px;padding:0;border:none;border-radius:50%;background:transparent;color:var(--md-on-surface-variant);cursor:pointer;transition:background .12s,color .12s}
+.course-pill.free .free-x:hover{background:color-mix(in srgb,var(--md-on-surface) 18%, transparent);color:var(--md-on-surface)}
+.course-pill.free .free-x .material-symbols-rounded{font-size:15px}
+.board-add-row{display:flex;gap:8px;margin-top:12px}
+.board-add-free{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:9px 8px;
+  border:1px dashed var(--glass-brd);border-radius:12px;background:transparent;color:var(--md-on-surface-variant);
+  font-family:'Hanken Grotesk';font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.board-add-free:hover{background:color-mix(in srgb,var(--md-on-surface) 7%, transparent);color:var(--md-on-surface);border-color:var(--md-on-surface-variant)}
+.board-add-free .material-symbols-rounded{font-size:17px}
 
 /* ---- Class editor popup ---- */
 .class-modal{max-width:440px;width:100%;text-align:left;max-height:88vh;overflow-y:auto}
@@ -1048,6 +1069,7 @@ let enrolled = seedRequired();
 let currentYear = "Freshman";
 let viewMode = 'list';            // 'list' | 'grid' (board)
 let classModalUid = null;         // uid of class shown in the board's popup editor
+let freePeriods = { Freshman:{full:0,half:0}, Sophomore:{full:0,half:0}, Junior:{full:0,half:0}, Senior:{full:0,half:0} };  // board-view free periods per year
 let yearCollapsed = { Freshman:false, Sophomore:false, Junior:false, Senior:false };
 let strandOpen = new Set();
 function toggleStrand(uid){ if(strandOpen.has(uid)) strandOpen.delete(uid); else strandOpen.add(uid); render(); }
@@ -1197,6 +1219,42 @@ function reorderWithinYear(fromUid, targetUid, after){
   enrolled.splice(ti, 0, dragged);
 }
 
+/* ---- Board pill drag: reorder within year AND within same credit type ---- */
+function sameYearAndTypeAsDrag(uid){
+  const a = enrolled.find(x=>x.uid===dragUid), b = enrolled.find(x=>x.uid===uid);
+  return a && b && a.year===b.year && (((a.credits||1)<1) === ((b.credits||1)<1));
+}
+function onPillDragStart(e){
+  dragUid = e.currentTarget.dataset.uid;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', dragUid); } catch(_){}
+}
+function onPillDragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  dragUid = null;
+  document.querySelectorAll('.course-pill.drop-target').forEach(p=>p.classList.remove('drop-target'));
+}
+function onPillDragOver(e){
+  const pill = e.currentTarget;
+  if (!dragUid || pill.dataset.uid===dragUid || !sameYearAndTypeAsDrag(pill.dataset.uid)) { e.dataTransfer.dropEffect='none'; return; }
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  pill.classList.add('drop-target');
+}
+function onPillDragLeave(e){ e.currentTarget.classList.remove('drop-target'); }
+function onPillDrop(e){
+  const pill = e.currentTarget;
+  pill.classList.remove('drop-target');
+  if (!dragUid || pill.dataset.uid===dragUid || !sameYearAndTypeAsDrag(pill.dataset.uid)) return;
+  e.preventDefault();
+  const isHalf = pill.classList.contains('half');
+  const r = pill.getBoundingClientRect();
+  const after = isHalf ? (e.clientX - r.left) > r.width/2 : (e.clientY - r.top) > r.height/2;
+  reorderWithinYear(dragUid, pill.dataset.uid, after);
+  render();
+}
+
 /* ===================== Planner grid view ===================== */
 
 
@@ -1208,23 +1266,68 @@ function renderGrid(wrap){
     const list = enrolled.filter(e => e.year === year);
     const col = document.createElement('div');
     col.className = 'board-col card';
-    let pills = '';
-    list.forEach(e => {
+    const fp = freePeriods[year] || (freePeriods[year] = { full:0, half:0 });
+    const fullCls = list.filter(e => (e.credits || 1) >= 1);
+    const halfCls = list.filter(e => (e.credits || 1) < 1);
+
+    const classPill = (e) => {
       const dm = DEPT_META[deptOf(e.id)] || DEPT_META['Elective'];
+      const half = (e.credits || 1) < 1;
       const mk = e.passFail
         ? (e.result && e.result!==PLANNED ? e.result : '')
         : (e.grade && e.grade!==PLANNED ? e.grade : '');
-      pills += `<button class="course-pill" data-uid="${e.uid}" style="--c:${dm.c}" title="${e.name.replace(/"/g,'&quot;')}"><span class="cp-name">${e.name}</span>${mk?`<span class="cp-grade">${mk}</span>`:''}</button>`;
-    });
-    const empties = Math.max(0, 8 - list.length);
-    for (let i=0;i<empties;i++) pills += `<button class="course-pill empty" data-add="${year}">Select Course</button>`;
+      return `<button class="course-pill${half?' half':''}" draggable="true" data-uid="${e.uid}" style="--c:${dm.c}" title="${e.name.replace(/"/g,'&quot;')}"><span class="cp-name">${e.name}</span>${mk?`<span class="cp-grade">${mk}</span>`:''}</button>`;
+    };
+    const freePill = (type) =>
+      `<div class="course-pill free${type==='half'?' half':''}" title="Free period"><span class="cp-name">Free</span><button class="free-x" data-freex="${year}" data-fxtype="${type}" title="Remove free period"><span class="material-symbols-rounded">close</span></button></div>`;
+    const fullEmpty = `<button class="course-pill empty" data-add="${year}">Select Course</button>`;
+    const halfEmpty = `<button class="course-pill empty half" data-add="${year}">Select Course</button>`;
+
+    // full-width items first (full classes, then full frees), then half-width (half classes, then half frees)
+    let pills = '';
+    fullCls.forEach(e => pills += classPill(e));
+    for (let i=0;i<fp.full;i++) pills += freePill('full');
+    halfCls.forEach(e => pills += classPill(e));
+    for (let i=0;i<fp.half;i++) pills += freePill('half');
+
+    let units = fullCls.length + fp.full + (halfCls.length + fp.half) * 0.5;
+    // pair a lone half-width item with a half add-slot
+    const halfWidthCount = halfCls.length + fp.half;
+    if (halfWidthCount % 2 === 1 && units + 0.5 <= 8) { pills += halfEmpty; units += 0.5; }
+    let remaining = Math.max(0, 8 - units);
+    while (remaining >= 1) { pills += fullEmpty; remaining -= 1; }
+    if (remaining >= 0.5) { pills += halfEmpty; remaining -= 0.5; }
+
     col.innerHTML = `<div class="board-col-title">${year} Year</div>
-      <div class="board-pills">${pills}</div>`;
+      <div class="board-pills">${pills}</div>
+      <div class="board-add-row">
+        <button class="board-add-free" data-addfree="${year}" data-aftype="full"><span class="material-symbols-rounded">add</span>Free</button>
+        <button class="board-add-free" data-addfree="${year}" data-aftype="half"><span class="material-symbols-rounded">add</span>½ Free</button>
+      </div>`;
     board.appendChild(col);
   });
   wrap.appendChild(board);
 
-  wrap.querySelectorAll('.course-pill[data-uid]').forEach(b=>b.onclick=()=>openClassModal(b.dataset.uid));
+  wrap.querySelectorAll('.course-pill[data-uid]').forEach(b=>{
+    b.onclick = () => openClassModal(b.dataset.uid);
+    b.addEventListener('dragstart', onPillDragStart);
+    b.addEventListener('dragend',   onPillDragEnd);
+    b.addEventListener('dragover',  onPillDragOver);
+    b.addEventListener('dragleave', onPillDragLeave);
+    b.addEventListener('drop',      onPillDrop);
+  });
+  wrap.querySelectorAll('.free-x[data-freex]').forEach(b=>b.onclick=(ev)=>{
+    ev.stopPropagation();
+    const y=b.dataset.freex, t=b.dataset.fxtype;
+    if(freePeriods[y]) freePeriods[y][t]=Math.max(0,(freePeriods[y][t]||0)-1);
+    render(); showSnack(`Removed a ${t==='half'?'½ ':''}free period from ${y}`);
+  });
+  wrap.querySelectorAll('.board-add-free[data-addfree]').forEach(b=>b.onclick=()=>{
+    const y=b.dataset.addfree, t=b.dataset.aftype;
+    if(!freePeriods[y]) freePeriods[y]={full:0,half:0};
+    freePeriods[y][t]=(freePeriods[y][t]||0)+1;
+    render(); showSnack(`Added a ${t==='half'?'½ ':''}free period to ${y}`);
+  });
   wrap.querySelectorAll('.course-pill[data-add]').forEach(b=>b.onclick=()=>{
     currentYear = b.dataset.add;
     document.querySelectorAll('#yearPicker button').forEach(x=>x.classList.toggle('sel', x.dataset.year===currentYear));
@@ -1833,6 +1936,7 @@ function saveState(){
       gradYear: document.getElementById('gradYear').value,
       theme: document.documentElement.getAttribute('data-theme') || 'light',
       viewMode,
+      freePeriods,
     }));
   }catch(e){ /* storage unavailable — app still works without saving */ }
 }
@@ -1853,8 +1957,14 @@ function loadState(){
     if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
     if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
     if(data.viewMode==='grid' || data.viewMode==='list') viewMode = data.viewMode;
-    if(data.viewMode==='grid' || data.viewMode==='list'){
-      viewMode = data.viewMode;
+    if(data.freePeriods && typeof data.freePeriods==='object'){
+      YEARS.forEach(y=>{
+        const v = data.freePeriods[y];
+        const cap = n => { n=parseInt(n,10); return (Number.isFinite(n)&&n>0)?n:0; };
+        if (typeof v === 'number') freePeriods[y] = { full: cap(v), half: 0 };      // old format
+        else if (v && typeof v === 'object') freePeriods[y] = { full: cap(v.full), half: cap(v.half) };
+        else freePeriods[y] = { full:0, half:0 };
+      });
     }
     if(data.theme==='dark'){
       document.documentElement.setAttribute('data-theme','dark');
