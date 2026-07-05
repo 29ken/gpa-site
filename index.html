@@ -462,6 +462,11 @@ main,header{position:relative;z-index:1}
 .course-pill[draggable="true"]{cursor:grab}
 .course-pill.dragging{opacity:.4;cursor:grabbing}
 .course-pill.drop-target{outline:2px dashed var(--brand);outline-offset:2px}
+.course-pill.ins-before::after,.course-pill.ins-after::after{content:'';position:absolute;background:var(--brand);border-radius:3px;z-index:3}
+.course-pill:not(.half).ins-before::after{left:4px;right:4px;top:-6px;height:3px}
+.course-pill:not(.half).ins-after::after{left:4px;right:4px;bottom:-6px;height:3px}
+.course-pill.half.ins-before::after{top:4px;bottom:4px;left:-6px;width:3px}
+.course-pill.half.ins-after::after{top:4px;bottom:4px;right:-6px;width:3px}
 /* free period block (with × remove) */
 .course-pill.free{background:color-mix(in srgb,var(--md-on-surface) 13%, var(--md-surface-cont));color:var(--md-on-surface);font-weight:700;padding:10px 30px 10px 12px;cursor:default}
 .course-pill.free.half{padding:10px 26px 10px 10px}
@@ -1297,35 +1302,93 @@ function onPillDragStart(e){
 }
 function onPillDragEnd(e){
   e.currentTarget.classList.remove('dragging');
-  dragUid = null; clearDropTargets();
+  dragUid = null; clearIndicators();
+}
+function clearIndicators(){
+  document.querySelectorAll('.course-pill.drop-target,.course-pill.ins-before,.course-pill.ins-after')
+    .forEach(p=>p.classList.remove('drop-target','ins-before','ins-after'));
+}
+// which third of the target the cursor is over → 'before' | 'swap' | 'after'
+function dropZone(pill, e){
+  const half = pill.classList.contains('half');
+  const r = pill.getBoundingClientRect();
+  const p = half ? (e.clientX - r.left)/r.width : (e.clientY - r.top)/r.height;
+  if (p < 0.30) return 'before';
+  if (p > 0.70) return 'after';
+  return 'swap';
+}
+// an empty "Select Course" slot only accepts a dragged item of matching width
+function emptyAccepts(pill){
+  const dragged = enrolled.find(x=>x.uid===dragUid);
+  return dragged && (isHalfWidth(dragged) === pill.classList.contains('half'));
+}
+// move an item to just after anchorUid (or to the end of its year when no anchor)
+function moveItemAfter(fromUid, anchorUid){
+  const dragged = enrolled.find(e=>e.uid===fromUid); if(!dragged) return;
+  const di = enrolled.findIndex(e=>e.uid===fromUid); enrolled.splice(di,1);
+  if (anchorUid){
+    const ai = enrolled.findIndex(e=>e.uid===anchorUid);
+    enrolled.splice(ai<0 ? enrolled.length : ai+1, 0, dragged);
+  } else {
+    let last=-1; enrolled.forEach((e,i)=>{ if(e.year===dragged.year) last=i; });
+    enrolled.splice(last+1, 0, dragged);
+  }
+}
+// insert a full-width item before/after a WHOLE box (keeps half pairs intact)
+function moveFullBeforeAfterBox(fromUid, targetUid, after){
+  const dragged = enrolled.find(e=>e.uid===fromUid); if(!dragged) return;
+  const box = boxOf(dragged.year, targetUid);
+  const anchor = after ? box[box.length-1] : box[0];
+  const di = enrolled.findIndex(e=>e.uid===fromUid); enrolled.splice(di,1);
+  let ai = enrolled.findIndex(e=>e.uid===anchor);
+  if (ai < 0) { enrolled.splice(di,0,dragged); return; }
+  enrolled.splice(after ? ai+1 : ai, 0, dragged);
 }
 function onPillDragOver(e){
   const pill = e.currentTarget;
-  if (!dragUid || pill.dataset.uid===dragUid || !dragDropAllowed(pill.dataset.uid)) { e.dataTransfer.dropEffect='none'; return; }
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  clearDropTargets();
-  const dragged = enrolled.find(x=>x.uid===dragUid);
-  if (dragged && !isHalfWidth(dragged)){
-    // highlight the entire target row (box), since a full item moves around whole rows
-    const t = enrolled.find(x=>x.uid===pill.dataset.uid);
-    boxOf(t.year, pill.dataset.uid).forEach(uid=>{
-      const el = document.querySelector(`.course-pill[data-uid="${uid}"]`); if(el) el.classList.add('drop-target');
-    });
-  } else {
+  clearIndicators();
+  if (pill.classList.contains('empty')){            // "Select Course" slot
+    if (!dragUid || !emptyAccepts(pill)) { e.dataTransfer.dropEffect='none'; return; }
+    e.preventDefault(); e.dataTransfer.dropEffect='move';
     pill.classList.add('drop-target');
+    return;
+  }
+  if (!dragUid || pill.dataset.uid===dragUid || !dragDropAllowed(pill.dataset.uid)) { e.dataTransfer.dropEffect='none'; return; }
+  e.preventDefault(); e.dataTransfer.dropEffect='move';
+  const dragged = enrolled.find(x=>x.uid===dragUid);
+  const zone = dropZone(pill, e);
+  if (zone === 'swap'){
+    if (!isHalfWidth(dragged)){                      // highlight the whole target row
+      const t = enrolled.find(x=>x.uid===pill.dataset.uid);
+      boxOf(t.year, pill.dataset.uid).forEach(uid=>{ const el=document.querySelector(`.course-pill[data-uid="${uid}"]`); if(el) el.classList.add('drop-target'); });
+    } else pill.classList.add('drop-target');
+  } else {
+    pill.classList.add(zone === 'before' ? 'ins-before' : 'ins-after');
   }
 }
 function onPillDragLeave(e){ /* cleared on next dragover/drop/end */ }
 function onPillDrop(e){
   const pill = e.currentTarget;
-  if (!dragUid || pill.dataset.uid===dragUid || !dragDropAllowed(pill.dataset.uid)) { clearDropTargets(); return; }
-  e.preventDefault();
+  if (!dragUid) { clearIndicators(); return; }
   const dragged = enrolled.find(x=>x.uid===dragUid);
-  if (isHalfWidth(dragged)) swapItems(dragged.year, dragUid, pill.dataset.uid);  // halves swap one-for-one
-  else swapBoxes(dragged.year, dragUid, pill.dataset.uid);                        // full swaps with the whole target row
-  clearDropTargets();
-  render();
+  if (pill.classList.contains('empty')){            // drop into an open slot
+    if (!emptyAccepts(pill)) { clearIndicators(); return; }
+    e.preventDefault();
+    moveItemAfter(dragUid, pill.dataset.anchor || null);
+    clearIndicators(); render(); return;
+  }
+  if (pill.dataset.uid===dragUid || !dragDropAllowed(pill.dataset.uid)) { clearIndicators(); return; }
+  e.preventDefault();
+  const zone = dropZone(pill, e);
+  if (zone === 'swap'){
+    if (isHalfWidth(dragged)) swapItems(dragged.year, dragUid, pill.dataset.uid);
+    else swapBoxes(dragged.year, dragUid, pill.dataset.uid);
+  } else {
+    const after = zone === 'after';
+    if (isHalfWidth(dragged)) reorderWithinYear(dragUid, pill.dataset.uid, after);
+    else moveFullBeforeAfterBox(dragUid, pill.dataset.uid, after);
+  }
+  clearIndicators(); render();
 }
 
 /* ===================== Planner grid view ===================== */
@@ -1380,8 +1443,7 @@ function renderGrid(wrap){
     };
     const freePill = (e) =>
       `<div class="course-pill free${isHalfWidth(e)?' half':''}" draggable="true" data-uid="${e.uid}" data-free="1" title="Free period"><span class="cp-name">Free</span><button class="free-x" data-freex="${e.uid}" title="Remove free period"><span class="material-symbols-rounded">close</span></button></div>`;
-    const fullEmpty = `<button class="course-pill empty" data-add="${year}">Select Course</button>`;
-    const halfEmpty = `<button class="course-pill empty half" data-add="${year}">Select Course</button>`;
+    const emptyPill = (half, anchor) => `<button class="course-pill empty${half?' half':''}" data-add="${year}" data-anchor="${anchor||''}">Select Course</button>`;
 
     // render row by row: full = its own row; two consecutive halves share a row;
     // a lone half gets a half-width "Select Course" filler beside it (so the row is never half-empty)
@@ -1390,11 +1452,11 @@ function renderGrid(wrap){
     let pills = '', units = 0;
     boxes.forEach(box => {
       box.forEach(uid => { const e = byUid.get(uid); pills += e.isFree ? freePill(e) : classPill(e); });
-      if (box.length === 1 && isHalfWidth(byUid.get(box[0]))) pills += halfEmpty;  // filler beside a lone half
+      if (box.length === 1 && isHalfWidth(byUid.get(box[0]))) pills += emptyPill(true, box[0]);  // filler anchored beside the lone half
       units += 1;   // every row is one slot
     });
     let remaining = Math.max(0, 8 - units);
-    while (remaining >= 1) { pills += fullEmpty; remaining -= 1; }
+    while (remaining >= 1) { pills += emptyPill(false, ''); remaining -= 1; }
 
     col.innerHTML = `${ list.length ? `<button class="icon-btn board-reset year-reset" data-year="${year}" title="Reset ${year} year"><span class="material-symbols-rounded">restart_alt</span></button>` : '' }
       <div class="board-col-title">${year} Year</div>
@@ -1430,12 +1492,18 @@ function renderGrid(wrap){
     ev.stopPropagation();
     confirmResetYear(b.dataset.year);
   });
-  wrap.querySelectorAll('.course-pill[data-add]').forEach(b=>b.onclick=()=>{
-    currentYear = b.dataset.add;
-    document.querySelectorAll('#yearPicker button').forEach(x=>x.classList.toggle('sel', x.dataset.year===currentYear));
-    updateFwLabel();
-    const srch = document.getElementById('search');
-    if(srch){ srch.focus(); srch.scrollIntoView({behavior:'smooth', block:'center'}); }
+  // empty "Select Course" slots accept dropped classes (and stay clickable to add via search)
+  wrap.querySelectorAll('.course-pill.empty[data-add]').forEach(b=>{
+    b.addEventListener('dragover',  onPillDragOver);
+    b.addEventListener('dragleave', onPillDragLeave);
+    b.addEventListener('drop',      onPillDrop);
+    b.onclick = () => {
+      currentYear = b.dataset.add;
+      document.querySelectorAll('#yearPicker button').forEach(x=>x.classList.toggle('sel', x.dataset.year===currentYear));
+      updateFwLabel();
+      const srch = document.getElementById('search');
+      if(srch){ srch.focus(); srch.scrollIntoView({behavior:'smooth', block:'center'}); }
+    };
   });
 }
 
