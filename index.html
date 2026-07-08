@@ -687,7 +687,10 @@ main,header{position:relative;z-index:1}
       <input id="shareUrl" readonly>
       <button class="btn filled" id="shareCopy"><span class="material-symbols-rounded">content_copy</span>Copy</button>
     </div>
-    <div style="text-align:right;margin-top:18px;"><button class="btn text" id="shareClose">Close</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
+      <button class="btn text" id="shareRandomize"><span class="material-symbols-rounded">shuffle</span>New random link</button>
+      <button class="btn text" id="shareClose">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1115,6 +1118,7 @@ function seedRequired() {
 let enrolled = seedRequired();
 let currentYear = "Freshman";
 let viewMode = 'list';            // 'list' | 'grid' (board)
+let planNonce = null;             // optional random tag so the share link can be re-rolled
 let classModalUid = null;         // uid of class shown in the board's popup editor
 let yearCollapsed = { Freshman:false, Sophomore:false, Junior:false, Senior:false };
 let strandOpen = new Set();
@@ -1985,6 +1989,15 @@ document.getElementById('shareCopy').onclick = async () => {
   catch(_){ const inp=document.getElementById('shareUrl'); inp.focus(); inp.select(); try{document.execCommand('copy');showSnack('Link copied to clipboard');}catch(e){showSnack('Press Ctrl/Cmd+C to copy');} }
 };
 document.getElementById('shareClose').onclick = () => shareModal.classList.add('hidden');
+document.getElementById('shareRandomize').onclick = () => {
+  planNonce = Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
+  updateShareURLNow();                                // rebuild the URL with the new random tag
+  saveState();                                        // persist so it stays stable until re-rolled
+  const inp = document.getElementById('shareUrl');
+  inp.value = location.href;
+  inp.focus(); inp.select();
+  showSnack('New random link generated');
+};
 shareModal.onclick = (e) => { if (e.target === shareModal) shareModal.classList.add('hidden'); };
 document.querySelectorAll('.save-opt').forEach(b => b.onclick = () => {
   saveModal.classList.add('hidden');
@@ -2155,6 +2168,7 @@ function stateObject(){
     gradYear: document.getElementById('gradYear').value,
     theme: document.documentElement.getAttribute('data-theme') || 'light',
     viewMode,
+    nonce: planNonce || undefined,
   };
 }
 // ---- Compact plan codec: store only what can't be re-derived, then compress ----
@@ -2196,17 +2210,20 @@ function decItem(a){
 function planToCompact(){
   const gy = parseInt(document.getElementById('gradYear').value, 10) || 0;
   const flags = (document.documentElement.getAttribute('data-theme')==='dark' ? 1 : 0) | (viewMode==='grid' ? 2 : 0);
-  return [1, document.getElementById('studentName').value || '', gy, flags, enrolled.filter(e=>!e.required).map(encItem)];
+  const arr = [1, document.getElementById('studentName').value || '', gy, flags, enrolled.filter(e=>!e.required).map(encItem)];
+  if (planNonce) arr.push(planNonce);   // optional random tag (trailing, so links stay short without it)
+  return arr;
 }
 function compactToStateObject(arr){
   if (!Array.isArray(arr) || arr[0] !== 1) return null;
-  const [, name, gy, flags, items] = arr;
+  const [, name, gy, flags, items, nonce] = arr;
   return {
     enrolled: (items||[]).map(decItem),
     studentName: typeof name==='string' ? name : '',
     gradYear: gy ? String(gy) : undefined,
     theme: (flags & 1) ? 'dark' : 'light',
     viewMode: (flags & 2) ? 'grid' : 'list',
+    nonce: nonce || undefined,
   };
 }
 function encodePlan(){
@@ -2253,6 +2270,7 @@ function applyState(data){
   if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
   if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
   if(data.viewMode==='grid' || data.viewMode==='list') viewMode = data.viewMode;
+  if(typeof data.nonce==='string' && data.nonce) planNonce = data.nonce;
   // migrate legacy free-period counts into ordered free entries (appended per year)
   if(data.freePeriods && typeof data.freePeriods==='object'){
     const cap = n => { n=parseInt(n,10); return (Number.isFinite(n)&&n>0)?n:0; };
