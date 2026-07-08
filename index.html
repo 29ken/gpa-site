@@ -1042,6 +1042,10 @@ const ALL_COURSE_BY_ID = Object.assign({},
   Object.fromEntries(COURSES_2526.map(c => [c[0], c])),
   Object.fromEntries(COURSES_2627.map(c => [c[0], c]))
 );
+// stable index for every course id → lets share links store a tiny number instead of the id string.
+// (Order is fixed for this build; keep the course arrays above append-only to preserve old links.)
+const ID_LIST = Object.keys(ALL_COURSE_BY_ID);
+const ID_INDEX = Object.fromEntries(ID_LIST.map((id, i) => [id, i]));
 
 /* ============================================================
    GRADUATION REQUIREMENT CLASSIFICATION
@@ -2171,54 +2175,80 @@ function stateObject(){
     nonce: planNonce || undefined,
   };
 }
-// ---- Compact plan codec: store only what can't be re-derived, then compress ----
-const _GC = {}, _CG = {};
-GRADE_ORDER.forEach((g,i)=>{ const ch=String.fromCharCode(65+i); _GC[g]=ch; _CG[ch]=g; });   // grades A..M
-_GC[PLANNED]='-'; _CG['-']=PLANNED;
-const _RC = { Pass:'p', Fail:'x' }, _CR = { p:'Pass', x:'Fail' };                                // pass/fail
-const _SC = { E:'E', PH:'Q', P:'P', AH:'H', A:'A', B:'B', I:'I' };                                // strand levels
-const _CS = { E:'E', Q:'PH', P:'P', H:'AH', A:'A', B:'B', I:'I' };
+// ---- Compact plan codec (v2): store tiny numbers, derive the rest, then compress ----
+// grade <-> index; strand-level char maps are shared with the legacy (v1) decoder below
+const _G2I = {}, _I2G = {};
+GRADE_ORDER.forEach((g,i)=>{ _G2I[g]=i; _I2G[i]=g; });
+_G2I[PLANNED]=13; _I2G[13]=PLANNED;
+const _R2I = { Pass:0, Fail:1, [PLANNED]:2 }, _I2R = { 0:'Pass', 1:'Fail', 2:PLANNED };
+const _SC = { E:'E', PH:'Q', P:'P', AH:'H', A:'A', B:'B', I:'I' };   // strand level -> char
+const _CS = { E:'E', Q:'PH', P:'P', H:'AH', A:'A', B:'B', I:'I' };   // char -> strand level
 
+function encStrand(e){
+  const levels = (e.strandLevels||[]).slice(0, e.strandCount).map(l => _SC[l] || '-').join('');
+  const names = (e.strandNames||[]).slice(0, e.strandCount);
+  return names.some(n => n && n.length) ? [e.strandCount, levels, names] : [e.strandCount, levels];
+}
+function decStrand(obj, s){
+  obj.strandCount = s[0];
+  obj.strandLevels = String(s[1]||'').split('').map(c => _CS[c] != null ? _CS[c] : '');
+  while (obj.strandLevels.length < obj.strandCount) obj.strandLevels.push('');
+  obj.strandNames = Array.isArray(s[2]) ? s[2].slice() : new Array(obj.strandCount).fill('');
+  while (obj.strandNames.length < obj.strandCount) obj.strandNames.push('');
+}
+// v2 item: [yearIdx, gradeIdx, courseIdx, pf] (+ optional {c,l,s}); free = [-1, yearIdx, half]
 function encItem(e){
   const y = YEARS.indexOf(e.year);
-  if (e.isFree) return ['F', y, e.freeHalf ? 1 : 0];
-  const g = e.passFail ? (_RC[e.result] || '-') : (_GC[e.grade] || '-');
-  const item = [y, e.id, g, e.passFail ? 1 : 0, e.credits, e.level];
-  if (e.strandCount){
-    const levels = (e.strandLevels||[]).slice(0, e.strandCount).map(l => _SC[l] || '-').join('');
-    const names = (e.strandNames||[]).slice(0, e.strandCount);
-    item.push(names.some(n => n && n.length) ? [e.strandCount, levels, names] : [e.strandCount, levels]);
-  }
+  if (e.isFree) return [-1, y, e.freeHalf ? 1 : 0];
+  const g = e.passFail ? (_R2I[e.result] != null ? _R2I[e.result] : 2) : (_G2I[e.grade] != null ? _G2I[e.grade] : 13);
+  const idx = ID_INDEX[e.id];
+  const item = [y, g, (idx != null ? idx : e.id), e.passFail ? 1 : 0];
+  const meta = ALL_COURSE_BY_ID[e.id];
+  const extra = {};
+  if (!meta || e.credits !== meta[2]) extra.c = e.credits;    // only store overrides
+  if (!meta || e.level !== meta[3]) extra.l = e.level;
+  if (e.strandCount) extra.s = encStrand(e);
+  if (Object.keys(extra).length) item.push(extra);
   return item;
 }
-function decItem(a){
+function decItem2(a){
+  if (a[0] === -1) return { id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:YEARS[a[1]]||'Freshman', required:false, grade:PLANNED, result:null, isFree:true, freeHalf:!!a[2] };
+  const [y, g, idField, pf] = a;
+  const extra = (a.length >= 5 && a[4] && typeof a[4]==='object' && !Array.isArray(a[4])) ? a[4] : {};
+  const id = (typeof idField === 'number') ? (ID_LIST[idField] || String(idField)) : idField;
+  const meta = ALL_COURSE_BY_ID[id];
+  const obj = { id, name: meta ? meta[1] : id, credits: (extra.c != null ? extra.c : (meta ? meta[2] : 1)), level: (extra.l != null ? extra.l : (meta ? meta[3] : 1)),
+    passFail: !!pf, year: YEARS[y]||'Freshman', required:false, grade:PLANNED, result:null };
+  if (pf) obj.result = (_I2R[g] != null ? _I2R[g] : PLANNED); else obj.grade = (_I2G[g] != null ? _I2G[g] : PLANNED);
+  if (Array.isArray(extra.s)) decStrand(obj, extra.s);
+  return obj;
+}
+// legacy v1 item: [yearIdx, idString, gradeChar, pf, credits, level] (+ strand); free = ['F', y, half]
+const _CG_V1 = {}; GRADE_ORDER.forEach((g,i)=>{ _CG_V1[String.fromCharCode(65+i)]=g; }); _CG_V1['-']=PLANNED;
+const _CR_V1 = { p:'Pass', x:'Fail' };
+function decItem1(a){
   if (a[0]==='F') return { id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:YEARS[a[1]]||'Freshman', required:false, grade:PLANNED, result:null, isFree:true, freeHalf:!!a[2] };
   const [y, id, g, pf, cr, lv, s] = a;
   const meta = ALL_COURSE_BY_ID[id];
   const obj = { id, name: meta ? meta[1] : id, credits: (cr!=null?cr:(meta?meta[2]:1)), level: (lv!=null?lv:(meta?meta[3]:1)),
     passFail: !!pf, year: YEARS[y]||'Freshman', required:false, grade:PLANNED, result:null };
-  if (pf) obj.result = _CR[g] || PLANNED; else obj.grade = _CG[g] || PLANNED;
-  if (Array.isArray(s)){
-    obj.strandCount = s[0];
-    obj.strandLevels = String(s[1]||'').split('').map(c => _CS[c] != null ? _CS[c] : '');
-    while (obj.strandLevels.length < obj.strandCount) obj.strandLevels.push('');
-    obj.strandNames = Array.isArray(s[2]) ? s[2].slice() : new Array(obj.strandCount).fill('');
-    while (obj.strandNames.length < obj.strandCount) obj.strandNames.push('');
-  }
+  if (pf) obj.result = _CR_V1[g] || PLANNED; else obj.grade = _CG_V1[g] || PLANNED;
+  if (Array.isArray(s)) decStrand(obj, s);
   return obj;
 }
 function planToCompact(){
   const gy = parseInt(document.getElementById('gradYear').value, 10) || 0;
   const flags = (document.documentElement.getAttribute('data-theme')==='dark' ? 1 : 0) | (viewMode==='grid' ? 2 : 0);
-  const arr = [1, document.getElementById('studentName').value || '', gy, flags, enrolled.filter(e=>!e.required).map(encItem)];
+  const arr = [2, document.getElementById('studentName').value || '', gy, flags, enrolled.filter(e=>!e.required).map(encItem)];
   if (planNonce) arr.push(planNonce);   // optional random tag (trailing, so links stay short without it)
   return arr;
 }
 function compactToStateObject(arr){
-  if (!Array.isArray(arr) || arr[0] !== 1) return null;
+  if (!Array.isArray(arr) || (arr[0] !== 1 && arr[0] !== 2)) return null;
+  const dec = arr[0] === 2 ? decItem2 : decItem1;
   const [, name, gy, flags, items, nonce] = arr;
   return {
-    enrolled: (items||[]).map(decItem),
+    enrolled: (items||[]).map(dec),
     studentName: typeof name==='string' ? name : '',
     gradYear: gy ? String(gy) : undefined,
     theme: (flags & 1) ? 'dark' : 'light',
