@@ -445,18 +445,20 @@ main,header{position:relative;z-index:1}
 .board-col{padding:14px;display:flex;flex-direction:column;position:relative}
 .board-pills{flex:1;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
 .board-col-title{text-align:center;font-weight:700;font-size:16px;margin-bottom:14px;color:var(--md-on-surface)}
-.course-pill{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 100%;min-height:50px;padding:10px 28px 10px 12px;
+.course-pill{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 100%;height:58px;padding:8px 14px;
   border:none;border-radius:14px;cursor:pointer;font-family:'Hanken Grotesk';font-size:14.5px;font-weight:600;line-height:1.2;text-align:center;
   background:color-mix(in srgb,var(--c) 22%, var(--md-surface-cont));color:color-mix(in srgb,var(--c) 60%, var(--md-on-surface));
   transition:transform .12s, box-shadow .12s}
-.course-pill .cp-name{display:block}
+.course-pill .cp-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .course-pill .cp-grade{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;
   background:color-mix(in srgb,var(--c) 75%, #000);color:#fff;border-radius:7px;padding:1px 7px;min-width:20px}
-.course-pill.empty{padding:10px 12px;background:var(--md-surface-cont-highest);color:var(--md-on-surface-variant);font-weight:500}
+.course-pill:has(.cp-grade){padding-left:38px;padding-right:38px}   /* keep text centered clear of the grade badge */
+.course-pill.empty{padding:8px 12px;background:var(--md-surface-cont-highest);color:var(--md-on-surface-variant);font-weight:500}
 .course-pill.empty:hover{background:color-mix(in srgb,var(--brand) 14%, var(--md-surface-cont-highest))}
 .course-pill:hover{transform:translateY(-1px);box-shadow:0 5px 14px -7px rgba(0,0,0,.4)}
 /* half-credit class: same height, half the width (two fit side by side) */
-.course-pill.half{flex:0 0 calc(50% - 5px);font-size:13px;padding:10px 22px 10px 10px}
+.course-pill.half{flex:0 0 calc(50% - 5px);font-size:13px;padding:8px 12px}
+.course-pill.half:has(.cp-grade){padding-left:24px;padding-right:24px}
 .course-pill.half .cp-grade{right:7px;font-size:11px;padding:1px 5px;min-width:16px}
 /* drag-to-reorder (within year + same credit type) */
 .course-pill[draggable="true"]{cursor:grab}
@@ -1030,6 +1032,13 @@ const REQUIRED = {
   "Senior":    [],
 };
 const COURSE_BY_ID = Object.fromEntries(COURSES_2627.map(c => [c[0], c]));
+// merged catalog (all framework years) — used to rebuild class names from a shared link's IDs
+const ALL_COURSE_BY_ID = Object.assign({},
+  Object.fromEntries(COURSES_2324.map(c => [c[0], c])),
+  Object.fromEntries(COURSES_2425.map(c => [c[0], c])),
+  Object.fromEntries(COURSES_2526.map(c => [c[0], c])),
+  Object.fromEntries(COURSES_2627.map(c => [c[0], c]))
+);
 
 /* ============================================================
    GRADUATION REQUIREMENT CLASSIFICATION
@@ -2148,9 +2157,60 @@ function stateObject(){
     viewMode,
   };
 }
-// compact, URL-safe encoding of a plan (compressed when LZString is available)
-function encodePlan(obj){
-  const json = JSON.stringify(obj);
+// ---- Compact plan codec: store only what can't be re-derived, then compress ----
+const _GC = {}, _CG = {};
+GRADE_ORDER.forEach((g,i)=>{ const ch=String.fromCharCode(65+i); _GC[g]=ch; _CG[ch]=g; });   // grades A..M
+_GC[PLANNED]='-'; _CG['-']=PLANNED;
+const _RC = { Pass:'p', Fail:'x' }, _CR = { p:'Pass', x:'Fail' };                                // pass/fail
+const _SC = { E:'E', PH:'Q', P:'P', AH:'H', A:'A', B:'B', I:'I' };                                // strand levels
+const _CS = { E:'E', Q:'PH', P:'P', H:'AH', A:'A', B:'B', I:'I' };
+
+function encItem(e){
+  const y = YEARS.indexOf(e.year);
+  if (e.isFree) return ['F', y, e.freeHalf ? 1 : 0];
+  const g = e.passFail ? (_RC[e.result] || '-') : (_GC[e.grade] || '-');
+  const item = [y, e.id, g, e.passFail ? 1 : 0, e.credits, e.level];
+  if (e.strandCount){
+    const levels = (e.strandLevels||[]).slice(0, e.strandCount).map(l => _SC[l] || '-').join('');
+    const names = (e.strandNames||[]).slice(0, e.strandCount);
+    item.push(names.some(n => n && n.length) ? [e.strandCount, levels, names] : [e.strandCount, levels]);
+  }
+  return item;
+}
+function decItem(a){
+  if (a[0]==='F') return { id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:YEARS[a[1]]||'Freshman', required:false, grade:PLANNED, result:null, isFree:true, freeHalf:!!a[2] };
+  const [y, id, g, pf, cr, lv, s] = a;
+  const meta = ALL_COURSE_BY_ID[id];
+  const obj = { id, name: meta ? meta[1] : id, credits: (cr!=null?cr:(meta?meta[2]:1)), level: (lv!=null?lv:(meta?meta[3]:1)),
+    passFail: !!pf, year: YEARS[y]||'Freshman', required:false, grade:PLANNED, result:null };
+  if (pf) obj.result = _CR[g] || PLANNED; else obj.grade = _CG[g] || PLANNED;
+  if (Array.isArray(s)){
+    obj.strandCount = s[0];
+    obj.strandLevels = String(s[1]||'').split('').map(c => _CS[c] != null ? _CS[c] : '');
+    while (obj.strandLevels.length < obj.strandCount) obj.strandLevels.push('');
+    obj.strandNames = Array.isArray(s[2]) ? s[2].slice() : new Array(obj.strandCount).fill('');
+    while (obj.strandNames.length < obj.strandCount) obj.strandNames.push('');
+  }
+  return obj;
+}
+function planToCompact(){
+  const gy = parseInt(document.getElementById('gradYear').value, 10) || 0;
+  const flags = (document.documentElement.getAttribute('data-theme')==='dark' ? 1 : 0) | (viewMode==='grid' ? 2 : 0);
+  return [1, document.getElementById('studentName').value || '', gy, flags, enrolled.filter(e=>!e.required).map(encItem)];
+}
+function compactToStateObject(arr){
+  if (!Array.isArray(arr) || arr[0] !== 1) return null;
+  const [, name, gy, flags, items] = arr;
+  return {
+    enrolled: (items||[]).map(decItem),
+    studentName: typeof name==='string' ? name : '',
+    gradYear: gy ? String(gy) : undefined,
+    theme: (flags & 1) ? 'dark' : 'light',
+    viewMode: (flags & 2) ? 'grid' : 'list',
+  };
+}
+function encodePlan(){
+  const json = JSON.stringify(planToCompact());
   if (window.LZString) return 'c' + LZString.compressToEncodedURIComponent(json);
   return 'b' + encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
 }
@@ -2162,7 +2222,8 @@ function decodePlan(payload){
     if(scheme==='c'){ if(!window.LZString) return null; json = LZString.decompressFromEncodedURIComponent(data); }
     else if(scheme==='b'){ json = decodeURIComponent(escape(atob(decodeURIComponent(data)))); }
     else return null;
-    return JSON.parse(json);
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? compactToStateObject(parsed) : parsed;   // array = compact, object = legacy link
   }catch(_){ return null; }
 }
 function readPlanFromHash(){
@@ -2171,7 +2232,7 @@ function readPlanFromHash(){
 }
 // keep the address bar in sync so the current URL always loads the current plan
 function updateShareURLNow(){
-  try{ history.replaceState(null, '', location.pathname + location.search + '#p=' + encodePlan(stateObject())); }catch(_){}
+  try{ history.replaceState(null, '', location.pathname + location.search + '#p=' + encodePlan()); }catch(_){}
 }
 let _shareTimer = null;
 function updateShareURL(){ clearTimeout(_shareTimer); _shareTimer = setTimeout(updateShareURLNow, 350); }
