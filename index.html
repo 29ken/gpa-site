@@ -482,6 +482,7 @@ main,header{position:relative;z-index:1}
 .board-reset{position:absolute;top:10px;right:10px;width:30px;height:30px;z-index:2}
 .btn.filled.danger{background:#e0685c;color:#fff}
 .btn.filled.danger:hover{background:#d4554a}
+#shareUrl{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--glass-brd);border-radius:10px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:12.5px}
 .board-add-free{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:9px 8px;
   border:1px dashed var(--glass-brd);border-radius:12px;background:transparent;color:var(--md-on-surface-variant);
   font-family:'Hanken Grotesk';font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
@@ -520,6 +521,7 @@ main,header{position:relative;z-index:1}
       </select>
     </div>
   </div>
+  <button class="icon-btn" id="shareBtn" title="Get shareable link to this plan"><span class="material-symbols-rounded">link</span></button>
   <button class="icon-btn" id="themeBtn" title="Toggle theme"><span class="material-symbols-rounded">dark_mode</span></button>
 </header>
 
@@ -675,7 +677,20 @@ main,header{position:relative;z-index:1}
   </div>
 </div>
 
+<div id="shareModal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:480px;text-align:left;">
+    <div class="title-large" style="margin-bottom:6px;">Your plan link</div>
+    <div class="body-medium note" style="margin-bottom:16px;">Bookmark this link or open it on any device to load this exact plan. The link updates as you edit — grab a fresh copy after making changes. Anyone with the link can open and edit their own copy; nothing is stored on a server, so keep the link private if your plan is.</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="shareUrl" readonly>
+      <button class="btn filled" id="shareCopy"><span class="material-symbols-rounded">content_copy</span>Copy</button>
+    </div>
+    <div style="text-align:right;margin-top:18px;"><button class="btn text" id="shareClose">Close</button></div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 <script>
 const LOGO_DATA = "data:image/jpeg;base64,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mkyaXDIGuJwAwB5VO5P16fjXmFfNeJGKoVswjCk03FWdu/T7j0uG6U4UJSls3p/mdb8PP+Rsk/692/8AQlrq/H//ACJsn/XRP51ynw8/5GyT/r3b/wBCWur8f/8AImyf9dE/nXv5A/8AjFMR6SPPx3/I2h6o8nzxXWaH4IfWNIh1AaikSybvl8stjBI9R6VyRGRivQfh5rEQhl0e4kAfcZItx+8COQPpjP4n0r4Xg/C4HF5gqGPV4yTS1a16anu5xVr0sP7Sg7NPXrochrmlHRtclsN5kCAEORjIIBzj65H4V6P4CBHg6IkYBkc/rVvXPDGm67JHNdeYkqDAkiIBI64OQeK0rO1tdN01LSBRHBEuBk9upJNfqGQcJTynNauLulSafKr66vrfsfMY/No4rCQpO/NdXPNviJn/AIS1P+vZf/Qmrk+orZ8VapHqvieaeJt0SARofUDv+JJNY1fkPEmJhiMzr1KbunJ2ffpc+uyynKnhacZKzSCiiivDO4Vfvr9aKF++v1orSGwmDffb60lK332+tJUPca2CiiikBqp4m16NBGmpzKqgAAYwAOg6VQurq4vbpri6maWVsZdupwMCoaK662PxNeCp1ajcV0bbX3GMMPTg+aMUn5JBWjba/rNnapb22oTRxJkBFPA5z/Ws6iooYuth5OVCbi3pdNp2+RVWlCorTSa81cs3uo3uoyK97cNOyjCl+oHpVdWZHV0YqynIZTgg0lFROvUqTdWcm5Pq3r94404wjyxVkbtr4x8RWqBFv2kUdBKoY/mRn9aW58aeIrmMob8xKevlIFP54yPzrBor0ln+ZKHs1iJ27czOb+z8Nfm9mr+iHO7ySGSR2dycsSckn1JptFFeTKUpPmkdiVixZ313p05nsZ2hkIKll644OP0FT3et6tf25t7y+lljJBKt0yOlZ4GKWumGOxFOm6MajUXuk3Z330vYxdCnKXO4pvvbUKVHZJA6MVZTlSDgg+oNJRXNGTi7xNrXN+38a+IreIR/bRKoGAZEBP54yfxqtqPiXW9UiMV1et5R6ogCg/XHX8ayaK9SpnmY1Kfsp15OO1rvbsckcDh4y51TSfeyCiiivKOsKKKKAFX76/Wihfvr9aK0hsJg332+tJSt99vrSVD3GtgooopAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFACr99frRQv31+tFaQ2Ewb77fWkpW++31pKh7jWwUUUUgCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigBV++v1ooX76/WitIbCYN99vrSUrffb60lQ9xrYKKKKQBRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAq/fX60UL99frRWkNhMG++31pKVvvt9aSoe41sFFFFIAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAVfvr9aKF++v1orSGwmKytvPynr6Um1v7p/KiihxVxJi7W/ut+VG1v7rflRRU8qC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLgqtvHynr6UUUVrGKJbP/2Q==";
 const COURSES_2627 = [
@@ -1946,6 +1961,22 @@ const confirmModal = document.getElementById('confirmModal');
 document.getElementById('confirmCancel').onclick = closeConfirm;
 document.getElementById('confirmOk').onclick = () => { const cb = _confirmCb; closeConfirm(); if (cb) cb(); };
 confirmModal.onclick = (e) => { if (e.target === confirmModal) closeConfirm(); };
+
+const shareModal = document.getElementById('shareModal');
+document.getElementById('shareBtn').onclick = () => {
+  updateShareURLNow();                              // make sure the URL reflects the latest plan
+  const inp = document.getElementById('shareUrl');
+  inp.value = location.href;
+  shareModal.classList.remove('hidden');
+  inp.focus(); inp.select();
+};
+document.getElementById('shareCopy').onclick = async () => {
+  const url = document.getElementById('shareUrl').value;
+  try { await navigator.clipboard.writeText(url); showSnack('Link copied to clipboard'); }
+  catch(_){ const inp=document.getElementById('shareUrl'); inp.focus(); inp.select(); try{document.execCommand('copy');showSnack('Link copied to clipboard');}catch(e){showSnack('Press Ctrl/Cmd+C to copy');} }
+};
+document.getElementById('shareClose').onclick = () => shareModal.classList.add('hidden');
+shareModal.onclick = (e) => { if (e.target === shareModal) shareModal.classList.add('hidden'); };
 document.querySelectorAll('.save-opt').forEach(b => b.onclick = () => {
   saveModal.classList.add('hidden');
   generatePDF(b.dataset.mode);   // 'both' or 'planner'
@@ -2107,51 +2138,84 @@ let st;function showSnack(m){const sb=document.getElementById('snackbar');sb.tex
 
 // ---- Persistence: remember this person's plan on their device ----
 const STORAGE_KEY = 'asij_gpa_planner_v1';
-function saveState(){
+
+function stateObject(){
+  return {
+    enrolled,
+    studentName: document.getElementById('studentName').value,
+    gradYear: document.getElementById('gradYear').value,
+    theme: document.documentElement.getAttribute('data-theme') || 'light',
+    viewMode,
+  };
+}
+// compact, URL-safe encoding of a plan (compressed when LZString is available)
+function encodePlan(obj){
+  const json = JSON.stringify(obj);
+  if (window.LZString) return 'c' + LZString.compressToEncodedURIComponent(json);
+  return 'b' + encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
+}
+function decodePlan(payload){
+  if(!payload) return null;
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      enrolled,
-      studentName: document.getElementById('studentName').value,
-      gradYear: document.getElementById('gradYear').value,
-      theme: document.documentElement.getAttribute('data-theme') || 'light',
-      viewMode,
-    }));
-  }catch(e){ /* storage unavailable — app still works without saving */ }
+    const scheme = payload[0], data = payload.slice(1);
+    let json;
+    if(scheme==='c'){ if(!window.LZString) return null; json = LZString.decompressFromEncodedURIComponent(data); }
+    else if(scheme==='b'){ json = decodeURIComponent(escape(atob(decodeURIComponent(data)))); }
+    else return null;
+    return JSON.parse(json);
+  }catch(_){ return null; }
+}
+function readPlanFromHash(){
+  const m = (location.hash || '').match(/[#&]p=([^&]+)/);
+  return m ? decodePlan(m[1]) : null;
+}
+// keep the address bar in sync so the current URL always loads the current plan
+function updateShareURLNow(){
+  try{ history.replaceState(null, '', location.pathname + location.search + '#p=' + encodePlan(stateObject())); }catch(_){}
+}
+let _shareTimer = null;
+function updateShareURL(){ clearTimeout(_shareTimer); _shareTimer = setTimeout(updateShareURLNow, 350); }
+
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObject())); }catch(e){ /* storage blocked — app still works */ }
+  updateShareURL();
+}
+function applyState(data){
+  if(!data) return;
+  if(Array.isArray(data.enrolled)){
+    enrolled = data.enrolled.filter(e => !e.required);
+    enrolled.forEach(e => { e.required = false; });
+    let maxU = 0;
+    enrolled.forEach(e=>{ if(!e.uid) e.uid = nextUid(); else { const n=parseInt(String(e.uid).replace(/\D/g,''),10); if(n>maxU) maxU=n; } });
+    uidCounter = Math.max(uidCounter, maxU);
+  }
+  if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
+  if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
+  if(data.viewMode==='grid' || data.viewMode==='list') viewMode = data.viewMode;
+  // migrate legacy free-period counts into ordered free entries (appended per year)
+  if(data.freePeriods && typeof data.freePeriods==='object'){
+    const cap = n => { n=parseInt(n,10); return (Number.isFinite(n)&&n>0)?n:0; };
+    YEARS.forEach(y=>{
+      const v = data.freePeriods[y];
+      let full=0, half=0;
+      if (typeof v === 'number') full = cap(v);
+      else if (v && typeof v === 'object') { full = cap(v.full); half = cap(v.half); }
+      for(let i=0;i<full;i++) enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:y, required:false, grade:PLANNED, result:null, isFree:true, freeHalf:false });
+      for(let i=0;i<half;i++) enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:y, required:false, grade:PLANNED, result:null, isFree:true, freeHalf:true });
+    });
+  }
+  if(data.theme==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    themeBtn.querySelector('span').textContent='light_mode';
+  }
 }
 function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-    const data = JSON.parse(raw);
-    if(Array.isArray(data.enrolled)){
-      // drop any previously auto-loaded/locked courses (feature removed)
-      enrolled = data.enrolled.filter(e => !e.required);
-      enrolled.forEach(e => { e.required = false; });
-      // restore uid counter so new adds don't collide
-      let maxU = 0;
-      enrolled.forEach(e=>{ if(!e.uid) e.uid = nextUid(); else { const n=parseInt(String(e.uid).replace(/\D/g,''),10); if(n>maxU) maxU=n; } });
-      uidCounter = Math.max(uidCounter, maxU);
-    }
-    if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
-    if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
-    if(data.viewMode==='grid' || data.viewMode==='list') viewMode = data.viewMode;
-    // migrate legacy free-period counts into ordered free entries (appended per year)
-    if(data.freePeriods && typeof data.freePeriods==='object'){
-      const cap = n => { n=parseInt(n,10); return (Number.isFinite(n)&&n>0)?n:0; };
-      YEARS.forEach(y=>{
-        const v = data.freePeriods[y];
-        let full=0, half=0;
-        if (typeof v === 'number') full = cap(v);
-        else if (v && typeof v === 'object') { full = cap(v.full); half = cap(v.half); }
-        for(let i=0;i<full;i++) enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:y, required:false, grade:PLANNED, result:null, isFree:true, freeHalf:false });
-        for(let i=0;i<half;i++) enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false, year:y, required:false, grade:PLANNED, result:null, isFree:true, freeHalf:true });
-      });
-    }
-    if(data.theme==='dark'){
-      document.documentElement.setAttribute('data-theme','dark');
-      themeBtn.querySelector('span').textContent='light_mode';
-    }
-  }catch(e){ /* ignore corrupt/blocked storage */ }
+  // a shared link takes priority over this device's local copy
+  let data = readPlanFromHash();
+  if(!data){
+    try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) data = JSON.parse(raw); }catch(e){ /* ignore corrupt/blocked storage */ }
+  }
+  try{ applyState(data); }catch(e){ /* ignore malformed plan */ }
 }
 
 // keep graduation year numeric + persist header fields
