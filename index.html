@@ -489,6 +489,8 @@ main,header{position:relative;z-index:1}
   border:1px dashed var(--glass-brd);border-radius:12px;background:transparent;color:var(--md-on-surface-variant);
   font-family:'Hanken Grotesk';font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
 .board-add-free:hover{background:color-mix(in srgb,var(--md-on-surface) 7%, transparent);color:var(--md-on-surface);border-color:var(--md-on-surface-variant)}
+.board-add-free:disabled{opacity:.35;cursor:not-allowed}
+.board-add-free:disabled:hover{background:transparent;color:var(--md-on-surface-variant);border-color:var(--glass-brd)}
 .board-add-free .material-symbols-rounded{font-size:17px}
 
 /* ---- Class editor popup ---- */
@@ -1213,7 +1215,11 @@ function removeClass(uid) {
 
 // board-view free period: an ordered entry in `enrolled`, but with 0 credits and no academic effect
 function isHalfWidth(e){ return e && (e.isFree ? !!e.freeHalf : (e.credits || 1) < 1); }
+// how many row-units a year uses (full block = 1, half block = 0.5); a column holds 8
+function yearUnits(year){ return enrolled.filter(e => e.year === year).reduce((s,e)=> s + (isHalfWidth(e)?0.5:1), 0); }
 function addFree(year, half){
+  const need = half ? 0.5 : 1;
+  if (yearUnits(year) + need > 8 + 1e-9){ showSnack(`${year} year is full`); return; }
   enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false,
     year, required:false, grade: PLANNED, result:null, isFree:true, freeHalf:!!half });
   render(); showSnack(`Added a ${half?'½ ':''}free period to ${year}`);
@@ -1486,12 +1492,15 @@ function renderGrid(wrap){
     let remaining = Math.max(0, 8 - units);
     while (remaining >= 1) { pills += emptyPill(false, ''); remaining -= 1; }
 
+    const usedUnits = list.reduce((s,e)=> s + (isHalfWidth(e)?0.5:1), 0);
+    const fullFits = usedUnits + 1   <= 8 + 1e-9;
+    const halfFits = usedUnits + 0.5 <= 8 + 1e-9;
     col.innerHTML = `${ list.length ? `<button class="icon-btn board-reset year-reset" data-year="${year}" title="Reset ${year} year"><span class="material-symbols-rounded">restart_alt</span></button>` : '' }
       <div class="board-col-title">${year} Year</div>
       <div class="board-pills">${pills}</div>
       <div class="board-add-row">
-        <button class="board-add-free" data-addfree="${year}" data-aftype="full"><span class="material-symbols-rounded">add</span>Free</button>
-        <button class="board-add-free" data-addfree="${year}" data-aftype="half"><span class="material-symbols-rounded">add</span>½ Free</button>
+        <button class="board-add-free" data-addfree="${year}" data-aftype="full" ${fullFits?'':'disabled'} title="${fullFits?'Add a free period':'No room for a full free period'}"><span class="material-symbols-rounded">add</span>Free</button>
+        <button class="board-add-free" data-addfree="${year}" data-aftype="half" ${halfFits?'':'disabled'} title="${halfFits?'Add a half free period':'Year is full'}"><span class="material-symbols-rounded">add</span>½ Free</button>
       </div>`;
     board.appendChild(col);
   });
