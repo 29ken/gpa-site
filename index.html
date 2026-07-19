@@ -1214,7 +1214,15 @@ function removeClass(uid) {
 }
 
 // board-view free period: an ordered entry in `enrolled`, but with 0 credits and no academic effect
-function isHalfWidth(e){ return e && (e.isFree ? !!e.freeHalf : (e.credits || 1) < 1); }
+// Wellness 9 (PE 1802) is only ½ a credit but runs the full year, so on the board it fills a whole
+// row like a 1-credit class. This affects board layout only — it still counts as ½ a credit for GPA/graduation.
+const FULLWIDTH_YEARLONG = new Set(['PE 1802']);
+function isHalfWidth(e){
+  if (!e) return false;
+  if (e.isFree) return !!e.freeHalf;
+  if (FULLWIDTH_YEARLONG.has(e.id)) return false;
+  return (e.credits || 1) < 1;
+}
 // how many row-units a year uses (full block = 1, half block = 0.5); a column holds 8
 function yearUnits(year){ return enrolled.filter(e => e.year === year).reduce((s,e)=> s + (isHalfWidth(e)?0.5:1), 0); }
 function addFree(year, half){
