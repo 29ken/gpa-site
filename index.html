@@ -487,9 +487,9 @@ main,header{position:relative;z-index:1}
 #shareUrl{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--glass-brd);border-radius:10px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:12.5px}
 .board-notes-wrap{margin-top:12px}
 .board-notes-label{font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--md-on-surface-variant);margin-bottom:5px}
-.board-notes{width:100%;box-sizing:border-box;resize:vertical;min-height:46px;padding:8px 10px;border:1px solid var(--glass-brd);border-radius:10px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:13px;line-height:1.4}
+.board-notes{width:100%;box-sizing:border-box;resize:none;overflow:hidden;min-height:46px;padding:8px 10px;border:1px solid var(--glass-brd);border-radius:10px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:13px;line-height:1.4}
 .board-notes:focus{outline:none;border-color:color-mix(in srgb,var(--brand) 55%, var(--glass-brd))}
-#notesText{width:100%;box-sizing:border-box;resize:vertical;padding:11px 13px;border:1px solid var(--glass-brd);border-radius:12px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:14px;line-height:1.5}
+#notesText{width:100%;box-sizing:border-box;resize:none;overflow:hidden;min-height:132px;padding:11px 13px;border:1px solid var(--glass-brd);border-radius:12px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:14px;line-height:1.5}
 #notesText:focus{outline:none;border-color:color-mix(in srgb,var(--brand) 55%, var(--glass-brd))}
 .year-notes{color:var(--md-on-surface-variant)}
 .year-notes:hover{background:color-mix(in srgb,var(--brand) 15%, transparent);color:var(--brand)}
@@ -705,7 +705,7 @@ main,header{position:relative;z-index:1}
   <div class="modal-card" style="max-width:460px;text-align:left;">
     <div class="title-large" id="notesTitle" style="margin-bottom:6px;">Notes</div>
     <div class="body-medium note" style="margin-bottom:12px;">Jot down anything for this year — APs you plan to self-study, ideas, or reminders. Saved with your plan.</div>
-    <textarea id="notesText" rows="6" placeholder="e.g. self-studying AP Physics 1 and AP Psychology…"></textarea>
+    <textarea id="notesText" rows="6"></textarea>
     <div style="text-align:right;margin-top:16px;"><button class="btn text" id="notesClose">Done</button></div>
   </div>
 </div>
@@ -1143,6 +1143,8 @@ let pendingInsertAfterUid = null; // when a "Select Course" slot is clicked, the
 let notesModalYear = null;        // year whose notes popup is open (list view)
 let yearNotes = { Freshman:'', Sophomore:'', Junior:'', Senior:'' };
 const escapeHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// grow a textarea to fit its content (CSS min-height sets the floor); no manual drag handle
+const autoGrow = (el) => { if(!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
 let yearCollapsed = { Freshman:false, Sophomore:false, Junior:false, Senior:false };
 let strandOpen = new Set();
 function toggleStrand(uid){ if(strandOpen.has(uid)) strandOpen.delete(uid); else strandOpen.add(uid); render(); }
@@ -1541,7 +1543,7 @@ function renderGrid(wrap){
       </div>
       <div class="board-notes-wrap">
         <div class="board-notes-label">Notes</div>
-        <textarea class="board-notes" data-notes="${year}" rows="2" placeholder="e.g. self-studying AP Physics 1…">${escapeHtml(yearNotes[year]||'')}</textarea>
+        <textarea class="board-notes" data-notes="${year}" rows="2">${escapeHtml(yearNotes[year]||'')}</textarea>
       </div>`;
     board.appendChild(col);
   });
@@ -1567,7 +1569,8 @@ function renderGrid(wrap){
     addFree(b.dataset.addfree, b.dataset.aftype==='half');
   });
   wrap.querySelectorAll('.board-notes[data-notes]').forEach(t=>{
-    t.addEventListener('input', () => { yearNotes[t.dataset.notes] = t.value; saveState(); });
+    autoGrow(t);
+    t.addEventListener('input', () => { yearNotes[t.dataset.notes] = t.value; autoGrow(t); saveState(); });
   });
   wrap.querySelectorAll('.board-reset[data-year]').forEach(b=>b.onclick=(ev)=>{
     ev.stopPropagation();
@@ -1598,6 +1601,7 @@ function openNotesModal(year){
   const t = document.getElementById('notesText');
   t.value = yearNotes[year] || '';
   document.getElementById('notesModal').classList.remove('hidden');
+  autoGrow(t);
   t.focus();
 }
 function closeNotesModal(){ document.getElementById('notesModal').classList.add('hidden'); notesModalYear = null; render(); }
@@ -2059,7 +2063,9 @@ shareModal.onclick = (e) => { if (e.target === shareModal) shareModal.classList.
 
 const notesModal = document.getElementById('notesModal');
 document.getElementById('notesText').addEventListener('input', () => {
-  if (notesModalYear){ yearNotes[notesModalYear] = document.getElementById('notesText').value; saveState(); }
+  const t = document.getElementById('notesText');
+  autoGrow(t);
+  if (notesModalYear){ yearNotes[notesModalYear] = t.value; saveState(); }
 });
 document.getElementById('notesClose').onclick = closeNotesModal;
 notesModal.onclick = (e) => { if (e.target === notesModal) closeNotesModal(); };
