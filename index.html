@@ -485,6 +485,14 @@ main,header{position:relative;z-index:1}
 .btn.filled.danger{background:#e0685c;color:#fff}
 .btn.filled.danger:hover{background:#d4554a}
 #shareUrl{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--glass-brd);border-radius:10px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:12.5px}
+.board-notes-wrap{margin-top:12px}
+.board-notes-label{font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--md-on-surface-variant);margin-bottom:5px}
+.board-notes{width:100%;box-sizing:border-box;resize:vertical;min-height:46px;padding:8px 10px;border:1px solid var(--glass-brd);border-radius:10px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:13px;line-height:1.4}
+.board-notes:focus{outline:none;border-color:color-mix(in srgb,var(--brand) 55%, var(--glass-brd))}
+#notesText{width:100%;box-sizing:border-box;resize:vertical;padding:11px 13px;border:1px solid var(--glass-brd);border-radius:12px;background:var(--md-surface-cont);color:var(--md-on-surface);font-family:'Hanken Grotesk';font-size:14px;line-height:1.5}
+#notesText:focus{outline:none;border-color:color-mix(in srgb,var(--brand) 55%, var(--glass-brd))}
+.year-notes{color:var(--md-on-surface-variant)}
+.year-notes:hover{background:color-mix(in srgb,var(--brand) 15%, transparent);color:var(--brand)}
 .board-add-free{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:9px 8px;
   border:1px dashed var(--glass-brd);border-radius:12px;background:transparent;color:var(--md-on-surface-variant);
   font-family:'Hanken Grotesk';font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
@@ -690,6 +698,15 @@ main,header{position:relative;z-index:1}
       <button class="btn filled" id="shareCopy"><span class="material-symbols-rounded">content_copy</span>Copy</button>
     </div>
     <div style="text-align:right;margin-top:18px;"><button class="btn text" id="shareClose">Close</button></div>
+  </div>
+</div>
+
+<div id="notesModal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:460px;text-align:left;">
+    <div class="title-large" id="notesTitle" style="margin-bottom:6px;">Notes</div>
+    <div class="body-medium note" style="margin-bottom:12px;">Jot down anything for this year — APs you plan to self-study, ideas, or reminders. Saved with your plan.</div>
+    <textarea id="notesText" rows="6" placeholder="e.g. self-studying AP Physics 1 and AP Psychology…"></textarea>
+    <div style="text-align:right;margin-top:16px;"><button class="btn text" id="notesClose">Done</button></div>
   </div>
 </div>
 
@@ -1122,6 +1139,10 @@ let enrolled = seedRequired();
 let currentYear = "Freshman";
 let viewMode = 'list';            // 'list' | 'grid' (board)
 let classModalUid = null;         // uid of class shown in the board's popup editor
+let pendingInsertAfterUid = null; // when a "Select Course" slot is clicked, the next added class goes right after this uid
+let notesModalYear = null;        // year whose notes popup is open (list view)
+let yearNotes = { Freshman:'', Sophomore:'', Junior:'', Senior:'' };
+const escapeHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let yearCollapsed = { Freshman:false, Sophomore:false, Junior:false, Senior:false };
 let strandOpen = new Set();
 function toggleStrand(uid){ if(strandOpen.has(uid)) strandOpen.delete(uid); else strandOpen.add(uid); render(); }
@@ -1161,6 +1182,7 @@ const resultsEl = document.getElementById('results');
 document.getElementById('yearPicker').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   currentYear = b.dataset.year;
+  pendingInsertAfterUid = null;
   document.querySelectorAll('#yearPicker button').forEach(x => x.classList.toggle('sel', x === b));
   updateFwLabel();
   if (searchEl.value) searchEl.dispatchEvent(new Event('input'));
@@ -1201,8 +1223,15 @@ function addClass(c) {
   }
   if (REQUIRED_IDS.has(id)) { showSnack(`${name} is required and is already in your plan`); return; }
   const passFail = PASS_FAIL.has(name);
-  enrolled.push({ uid: nextUid(), id,name,credits,level,passFail, year: currentYear, required: false,
-    grade: passFail ? null : PLANNED, result: passFail ? PLANNED : null });
+  const entry = { uid: nextUid(), id,name,credits,level,passFail, year: currentYear, required: false,
+    grade: passFail ? null : PLANNED, result: passFail ? PLANNED : null };
+  // if the user clicked a half-width "Select Course" filler, drop the new class right next to that
+  // lone half so the two pair into one row (instead of appending it as a new row)
+  const anchorIdx = (pendingInsertAfterUid && isHalfWidth(entry))
+    ? enrolled.findIndex(e => e.uid === pendingInsertAfterUid && e.year === currentYear)
+    : -1;
+  if (anchorIdx >= 0) enrolled.splice(anchorIdx + 1, 0, entry); else enrolled.push(entry);
+  pendingInsertAfterUid = null;
   searchEl.value=''; resultsEl.innerHTML=''; searchEl.focus();
   render(); showSnack(`Added ${name} to ${currentYear}`);
 }
@@ -1509,6 +1538,10 @@ function renderGrid(wrap){
       <div class="board-add-row">
         <button class="board-add-free" data-addfree="${year}" data-aftype="full" ${fullFits?'':'disabled'} title="${fullFits?'Add a free period':'No room for a full free period'}"><span class="material-symbols-rounded">add</span>Free</button>
         <button class="board-add-free" data-addfree="${year}" data-aftype="half" ${halfFits?'':'disabled'} title="${halfFits?'Add a half free period':'Year is full'}"><span class="material-symbols-rounded">add</span>½ Free</button>
+      </div>
+      <div class="board-notes-wrap">
+        <div class="board-notes-label">Notes</div>
+        <textarea class="board-notes" data-notes="${year}" rows="2" placeholder="e.g. self-studying AP Physics 1…">${escapeHtml(yearNotes[year]||'')}</textarea>
       </div>`;
     board.appendChild(col);
   });
@@ -1533,6 +1566,9 @@ function renderGrid(wrap){
   wrap.querySelectorAll('.board-add-free[data-addfree]').forEach(b=>b.onclick=()=>{
     addFree(b.dataset.addfree, b.dataset.aftype==='half');
   });
+  wrap.querySelectorAll('.board-notes[data-notes]').forEach(t=>{
+    t.addEventListener('input', () => { yearNotes[t.dataset.notes] = t.value; saveState(); });
+  });
   wrap.querySelectorAll('.board-reset[data-year]').forEach(b=>b.onclick=(ev)=>{
     ev.stopPropagation();
     confirmResetYear(b.dataset.year);
@@ -1544,6 +1580,7 @@ function renderGrid(wrap){
     b.addEventListener('drop',      onPillDrop);
     b.onclick = () => {
       currentYear = b.dataset.add;
+      pendingInsertAfterUid = b.dataset.anchor || null;   // half-filler slots carry the lone-half uid
       document.querySelectorAll('#yearPicker button').forEach(x=>x.classList.toggle('sel', x.dataset.year===currentYear));
       updateFwLabel();
       const srch = document.getElementById('search');
@@ -1554,6 +1591,16 @@ function renderGrid(wrap){
 
 function openClassModal(uid){ classModalUid = uid; render(); }
 function closeClassModal(){ classModalUid = null; render(); }
+
+function openNotesModal(year){
+  notesModalYear = year;
+  document.getElementById('notesTitle').textContent = `${year} — Notes`;
+  const t = document.getElementById('notesText');
+  t.value = yearNotes[year] || '';
+  document.getElementById('notesModal').classList.remove('hidden');
+  t.focus();
+}
+function closeNotesModal(){ document.getElementById('notesModal').classList.add('hidden'); notesModalYear = null; render(); }
 
 function renderClassModal(){
   const ov = document.getElementById('classModal');
@@ -1639,12 +1686,14 @@ function render() {
         </div>
       </div>
       <div class="head-right">
+        <button class="icon-btn year-notes" data-year="${year}" title="Notes for ${year}"><span class="material-symbols-rounded">${yearNotes[year]?'sticky_note_2':'note_add'}</span></button>
         ${ enrolled.some(e=>e.year===year && !e.required) ? `<button class="icon-btn year-reset" data-year="${year}" title="Reset ${year} year"><span class="material-symbols-rounded">restart_alt</span></button>` : '' }
         <div class="gpa-chip">
           ${g ? `<span class="chip credit">UW ${g.uw.toFixed(2)}</span><span class="chip level">W ${g.w.toFixed(2)}</span>` : `<span class="chip" style="background:var(--md-surface-cont-highest);color:var(--md-on-surface-variant)">No grades yet</span>`}
         </div>
       </div>`;
     head.onclick = () => { yearCollapsed[year] = !yearCollapsed[year]; render(); };
+    head.querySelector('.year-notes')?.addEventListener('click', ev => { ev.stopPropagation(); openNotesModal(year); });
     head.querySelector('.year-reset')?.addEventListener('click', ev => { ev.stopPropagation(); confirmResetYear(year); });
     section.appendChild(head);
 
@@ -2007,6 +2056,13 @@ document.getElementById('shareCopy').onclick = async () => {
 };
 document.getElementById('shareClose').onclick = () => shareModal.classList.add('hidden');
 shareModal.onclick = (e) => { if (e.target === shareModal) shareModal.classList.add('hidden'); };
+
+const notesModal = document.getElementById('notesModal');
+document.getElementById('notesText').addEventListener('input', () => {
+  if (notesModalYear){ yearNotes[notesModalYear] = document.getElementById('notesText').value; saveState(); }
+});
+document.getElementById('notesClose').onclick = closeNotesModal;
+notesModal.onclick = (e) => { if (e.target === notesModal) closeNotesModal(); };
 document.querySelectorAll('.save-opt').forEach(b => b.onclick = () => {
   saveModal.classList.add('hidden');
   generatePDF(b.dataset.mode);   // 'both' or 'planner'
@@ -2176,6 +2232,7 @@ function stateObject(){
     gradYear: document.getElementById('gradYear').value,
     theme: document.documentElement.getAttribute('data-theme') || 'light',
     viewMode,
+    yearNotes: { ...yearNotes },
   };
 }
 // ---- Compact plan codec (v2): store tiny numbers, derive the rest, then compress ----
@@ -2242,18 +2299,24 @@ function decItem1(a){
 function planToCompact(){
   const gy = parseInt(document.getElementById('gradYear').value, 10) || 0;
   const flags = (document.documentElement.getAttribute('data-theme')==='dark' ? 1 : 0) | (viewMode==='grid' ? 2 : 0);
-  return [2, document.getElementById('studentName').value || '', gy, flags, enrolled.filter(e=>!e.required).map(encItem)];
+  const arr = [2, document.getElementById('studentName').value || '', gy, flags, enrolled.filter(e=>!e.required).map(encItem)];
+  const notes = YEARS.map((y,i)=> [i, yearNotes[y] || '']).filter(n => n[1]);   // only years that have notes
+  if (notes.length) arr.push(notes);   // arr[5] = notes (array); older links kept a string here, which is ignored below
+  return arr;
 }
 function compactToStateObject(arr){
   if (!Array.isArray(arr) || (arr[0] !== 1 && arr[0] !== 2)) return null;
   const dec = arr[0] === 2 ? decItem2 : decItem1;
-  const [, name, gy, flags, items] = arr;   // any trailing element from older links is ignored
+  const [, name, gy, flags, items] = arr;
+  let yn;
+  if (Array.isArray(arr[5])){ yn = {}; arr[5].forEach(([i,t]) => { if (YEARS[i]) yn[YEARS[i]] = t; }); }
   return {
     enrolled: (items||[]).map(dec),
     studentName: typeof name==='string' ? name : '',
     gradYear: gy ? String(gy) : undefined,
     theme: (flags & 1) ? 'dark' : 'light',
     viewMode: (flags & 2) ? 'grid' : 'list',
+    yearNotes: yn,
   };
 }
 function encodePlan(){
@@ -2300,6 +2363,9 @@ function applyState(data){
   if(typeof data.studentName==='string') document.getElementById('studentName').value = data.studentName;
   if(typeof data.gradYear==='string') document.getElementById('gradYear').value = data.gradYear;
   if(data.viewMode==='grid' || data.viewMode==='list') viewMode = data.viewMode;
+  if(data.yearNotes && typeof data.yearNotes==='object'){
+    YEARS.forEach(y => { if (typeof data.yearNotes[y] === 'string') yearNotes[y] = data.yearNotes[y]; });
+  }
   // migrate legacy free-period counts into ordered free entries (appended per year)
   if(data.freePeriods && typeof data.freePeriods==='object'){
     const cap = n => { n=parseInt(n,10); return (Number.isFinite(n)&&n>0)?n:0; };
