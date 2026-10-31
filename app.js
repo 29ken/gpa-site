@@ -1,267 +1,12 @@
 const LOGO_DATA = "data:image/jpeg;base64,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mkyaXDIGuJwAwB5VO5P16fjXmFfNeJGKoVswjCk03FWdu/T7j0uG6U4UJSls3p/mdb8PP+Rsk/692/8AQlrq/H//ACJsn/XRP51ynw8/5GyT/r3b/wBCWur8f/8AImyf9dE/nXv5A/8AjFMR6SPPx3/I2h6o8nzxXWaH4IfWNIh1AaikSybvl8stjBI9R6VyRGRivQfh5rEQhl0e4kAfcZItx+8COQPpjP4n0r4Xg/C4HF5gqGPV4yTS1a16anu5xVr0sP7Sg7NPXrochrmlHRtclsN5kCAEORjIIBzj65H4V6P4CBHg6IkYBkc/rVvXPDGm67JHNdeYkqDAkiIBI64OQeK0rO1tdN01LSBRHBEuBk9upJNfqGQcJTynNauLulSafKr66vrfsfMY/No4rCQpO/NdXPNviJn/AIS1P+vZf/Qmrk+orZ8VapHqvieaeJt0SARofUDv+JJNY1fkPEmJhiMzr1KbunJ2ffpc+uyynKnhacZKzSCiiivDO4Vfvr9aKF++v1orSGwmDffb60lK332+tJUPca2CiiikBqp4m16NBGmpzKqgAAYwAOg6VQurq4vbpri6maWVsZdupwMCoaK662PxNeCp1ajcV0bbX3GMMPTg+aMUn5JBWjba/rNnapb22oTRxJkBFPA5z/Ws6iooYuth5OVCbi3pdNp2+RVWlCorTSa81cs3uo3uoyK97cNOyjCl+oHpVdWZHV0YqynIZTgg0lFROvUqTdWcm5Pq3r94404wjyxVkbtr4x8RWqBFv2kUdBKoY/mRn9aW58aeIrmMob8xKevlIFP54yPzrBor0ln+ZKHs1iJ27czOb+z8Nfm9mr+iHO7ySGSR2dycsSckn1JptFFeTKUpPmkdiVixZ313p05nsZ2hkIKll644OP0FT3et6tf25t7y+lljJBKt0yOlZ4GKWumGOxFOm6MajUXuk3Z330vYxdCnKXO4pvvbUKVHZJA6MVZTlSDgg+oNJRXNGTi7xNrXN+38a+IreIR/bRKoGAZEBP54yfxqtqPiXW9UiMV1et5R6ogCg/XHX8ayaK9SpnmY1Kfsp15OO1rvbsckcDh4y51TSfeyCiiivKOsKKKKAFX76/Wihfvr9aK0hsJg332+tJSt99vrSVD3GtgooopAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFACr99frRQv31+tFaQ2Ewb77fWkpW++31pKh7jWwUUUUgCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigBV++v1ooX76/WitIbCYN99vrSUrffb60lQ9xrYKKKKQBRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAq/fX60UL99frRWkNhMG++31pKVvvt9aSoe41sFFFFIAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAVfvr9aKF++v1orSGwmKytvPynr6Um1v7p/KiihxVxJi7W/ut+VG1v7rflRRU8qC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLhtb+635UbW/ut+VFFHKguG1v7rflRtb+635UUUcqC4bW/ut+VG1v7rflRRRyoLgqtvHynr6UUUVrGKJbP/2Q==";
-const COURSES_2627 = [
-  ["DLS 5800","Deep Learning Seminar I",1,5],["DLS 5801","Deep Learning Seminar 2",1,5],
-  ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
-  ["ENG 1000","English 9",1,1],["ENG 2000","English 10",1,2],
-  ["ENG 4004","English 11/12: From Page to Screen",1,4],["ENG 4003","English 11/12: Mythology of Monsters",1,4],
-  ["ENG 5000","AP English Language & Composition",1,5],["ENG 5001","AP English Literature & Composition",1,5],
-  ["ENG 5002","SUPA: Introduction to Creative Nonfiction",1,5],["ENG 5003","SUPA: Presentational Speaking",0.5,5],
-  ["SOC 1100","Foundations of the Modern World",1,1],["SOC 2100","Modern World History",1,2],
-  ["SOC 3101","Japan Studies",0.5,3],["SOC 3103","Contemporary World Issues: Sustainable Development",0.5,3],
-  ["SOC 4100","US History",0.5,4],["SOC 4101","Race and Ethnic Studies",0.5,4],
-  ["SOC 5100","AP World History",1,5],["SOC 5101","AP US History",1,5],
-  ["SOC 5102","AP Macroeconomics",1,5],["SOC 5103","AP Microeconomics",1,5],
-  ["SOC 5104","SUPA: Psychology",1,5],["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],
-  ["SOC 6100","Japan Seminar",1,6],
-  ["MTH 1201","Integrated Mathematics 1",1,1],["MTH 2200","Integrated Mathematics 2",1,2],
-  ["MTH 3200","Algebra 2",1,3],["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],
-  ["MTH 4202","Calculus",1,4],["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],
-  ["MTH 5203","AP Calculus BC (Post AB)",1,5],["MTH 5202","AP Statistics",1,5],
-  ["MTH 6202","Advanced Math Topics: Complex Analysis and Differential Equations",1,6],
-  ["SCI 1300","Biology",1,1],["SCI 2301","Chemistry",1,2],["SCI 3303","Dynamics of Physics & Chemistry",1,3],
-  ["SCI 3302","Physics",1,3],["SCI 4300","Biomedical Science",1,4],["SCI 4301","Organic Chemistry",1,4],
-  ["SCI 4303","Food Science & Sustainability",1,4],["SCI 4304","Public Health and Public Policy",1,4],
-  ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
-  ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
-  ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
-  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Technology & Society",0.5,1],
-  ["DI 1904","Data Science I: Literacy, Analysis, and Visualization",0.5,1],
-  ["DI 1905","Cybersecurity I: Networks & Security",0.5,1],["DI 2900","Design Studio",0.5,2],
-  ["DI 4906","Data Science 2: AI & ML Models",0.5,4],["DI 4907","Cybersecurity 2: Ethical Hacking",0.5,4],
-  ["DI 5900","AP Computer Science Principles",1,5],["DI 5901","AP Computer Science A",1,5],
-  ["DI 6902","Advanced Topics in Design, Engineering, and Computer Science",0.5,6],
-  ["MDL 1510","Novice Mid Chinese",1,1],["MDL 2510","Novice High Chinese",1,2],
-  ["MDL 3510","Intermediate Chinese",1,3],["MDL 4510","Intermediate Mid Chinese",1,4],
-  ["MDL 5510","AP Chinese Language & Culture",1,5],["MDL 6500","Advanced Chinese: Politics & Economics",1,6],
-  ["MDL 1511","Novice Mid-High Spanish",1,1],["MDL 2511","Intermediate Spanish",1,2],
-  ["MDL 3511","Intermediate Mid Spanish",1,3],["MDL 4511","Intermediate High Spanish",1,4],
-  ["MDL 5511","AP Spanish Language & Culture",1,5],["MDL 6511","Advanced Spanish",1,6],
-  ["MDL 1502","Novice Japanese",1,1],["MDL 2502","Novice Mid Japanese",1,2],
-  ["MDL 3502","Novice High Japanese",1,3],["MDL 4502","Intermediate Japanese",1,4],
-  ["MDL 5502","AP Japanese Language & Culture",1,5],["MDL 6502","Intermediate High Japanese",1,6],
-  ["MDL 6503","Advanced Japanese",1,6],["MDL 6504","Advanced High Japanese",1,6],
-  ["MDL 6505","Superior Japanese: General Topics",1,6],["MDL 6506","Superior Japanese: Field Specific Studies & Research",1,6],
-  ["MDL 6507","Superior Japanese: Literature",1,6],["MDL 6508","Superior Japanese: Business, Economics, and Society",1,6],
-  ["VPA 1600","Introduction to Band",1,1],["VPA 2600","Concert Band 1",1,2],["VPA 3600","Concert Band 2",1,3],
-  ["VPA 4600","Wind Ensemble",1,4],["VPA 5600","Wind Ensemble Extended Studies",1,5],
-  ["VPA 4605","Jazz Band",1,4],["VPA 5605","Jazz Band Extended Studies",1,5],
-  ["VPA 1601","Concert Choir 1",1,1],["VPA 2601","Concert Choir 2",1,2],["VPA 3601","Chamber Singers",1,3],
-  ["VPA 4601","Vocal Jazz Ensemble",1,4],["VPA 5601","Vocal Jazz Ensemble Extended Studies",1,5],
-  ["VPA 2604","Concert Orchestra 1",1,2],["VPA 3604","Concert Orchestra 2",1,3],
-  ["VPA 4604","Chamber Orchestra",1,4],["VPA 5604","Chamber Orchestra Extended Studies",1,5],
-  ["VPA 1602","Modern Band 1",0.5,1],["VPA 2602","Modern Band 2",0.5,2],
-  ["VPA 1603","Composition & Songwriting 1",0.5,1],["VPA 2603","Composition & Songwriting 2",0.5,2],
-  ["VPA 1650","Acting 1",0.5,1],["VPA 2650","Acting 2",0.5,2],["VPA 3650","Advanced Acting",0.5,3],
-  ["VPA 3651","Acting for the Camera",0.5,3],["VPA 1651","Stagecraft",0.5,1],
-  ["VPA 1700","Art Foundations",1,1],["VPA 1704","Idea to Object: Digital Fabrication",0.5,1],
-  ["VPA 1705","Digital Filmmaking 1",0.5,1],["VPA 2700","Digital Filmmaking 2",0.5,2],
-  ["VPA 3700","Ceramics",0.5,3],["VPA 3703","Photography",0.5,3],["VPA 3701","Printmaking",0.5,3],
-  ["VPA 4700","Advanced Studio Art",1,4],["VPA 5700","AP Studio Art: Drawing",1,5],
-  ["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
-  ["PE 1802","Wellness 9",1,1],["PE 2802","Wellness 10",1,2],["PE 3805","Lifetime Activities",0.5,3],
-  ["PE 3801","Strength Training & Conditioning",0.5,3],["PE 4801","Strength Training & Conditioning 2",0.5,4],
-  ["PE 3803","Lifeguard Training",0.5,3],["PE 3804","Personal Fitness",0.5,3],
-  ["IND 1004","Skills for Success",0.5,1],["IND 1003","Teaching Intern",0.5,1],
-  ["IND 4000","Independent Inquiry",0.5,4],["IND 4001","Global Online Academy (GOA)",0.5,4],
-];
-
-/* ===== 2025–26 HS Learning Framework course list (for students who took
-   classes under the older framework — names/credits/offerings differ). ===== */
-const COURSES_2526 = [
-  ["DLS 5800","Deep Learning Seminar I",1,5],["DLS 5801","Deep Learning Seminar II",1,5],
-  ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
-  ["ENG 1000","English 9",1,1],["ENG 2000","English 10",1,2],
-  ["ENG 4004","English 11/12: Crime & Punishment",1,4],["ENG 4003","English 11/12: Psychology of Fear",1,4],
-  ["ENG 5000","AP English Language & Composition",1,5],["ENG 5001","AP English Literature & Composition",1,5],
-  ["ENG 5002","SUPA: Introduction to Creative Nonfiction",1,5],["ENG 5003","SUPA: Presentational Speaking",0.5,5],
-  ["SOC 1100","Foundations of the Modern World",1,1],["SOC 2100","Modern World History",1,2],
-  ["SOC 3101","Japan Studies",0.5,3],["SOC 3103","Contemporary World Issues: Sustainable Development",0.5,3],
-  ["SOC 4100","US History",0.5,4],["SOC 4101","Race and Ethnic Studies",0.5,4],
-  ["SOC 5100","AP World History",1,5],["SOC 5101","AP US History",1,5],
-  ["SOC 5102","AP Economics",1,5],["SOC 5103","AP Microeconomics",1,5],
-  ["SOC 5104","SUPA: Psychology",1,5],["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],
-  ["SOC 6100","Japan Seminar",1,6],
-  ["MTH 1201","Integrated Mathematics I",1,1],["MTH 2200","Geometry",1,2],
-  ["MTH 3200","Algebra 2",1,3],["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],
-  ["MTH 4202","Calculus",1,4],["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],
-  ["MTH 5203","AP Calculus BC (Post AB)",1,5],["MTH 5202","AP Statistics",1,5],
-  ["MTH 6202","Advanced Math Topics: Linear Algebra & Multivariable Calculus",1,6],
-  ["SCI 1300","Biology",1,1],["SCI 2301","Chemistry",1,2],["SCI 2302","Dynamics of Chemistry & Physics",1,2],
-  ["SCI 3302","Physics",1,3],["SCI 4300","Biomedical Science",1,4],["SCI 4301","Organic Chemistry",1,4],
-  ["SCI 4303","Food Science & Sustainability",1,4],
-  ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
-  ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
-  ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
-  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Global Citizenship in the Digital Age",0.5,1],
-  ["DI 2900","Design Studio",0.5,2],["DI 5900","AP Computer Science Principles",1,5],
-  ["DI 5901","AP Computer Science A",1,5],["DI 5903","Data Science",1,5],
-  ["DI 6902","Advanced Topics in Computer Science",0.5,6],
-  ["MDL 1510","Novice Mid Chinese",1,1],["MDL 2510","Novice High Chinese",1,2],
-  ["MDL 3510","Intermediate Chinese",1,3],["MDL 4510","Intermediate Mid Chinese",1,4],
-  ["MDL 5510","AP Chinese Language & Culture",1,5],["MDL 6501","Advanced Chinese: Culture & Media",1,6],
-  ["MDL 1511","Novice Mid-High Spanish",1,1],["MDL 2511","Intermediate Spanish",1,2],
-  ["MDL 3511","Intermediate Mid Spanish",1,3],["MDL 4511","Intermediate High Spanish",1,4],
-  ["MDL 5511","AP Spanish Language & Culture",1,5],["MDL 6511","Advanced Spanish",1,6],
-  ["MDL 1502","Novice Japanese",1,1],["MDL 2502","Novice Mid Japanese",1,2],
-  ["MDL 3502","Novice High Japanese",1,3],["MDL 4502","Intermediate Japanese",1,4],
-  ["MDL 5502","AP Japanese Language & Culture",1,5],["MDL 6502","Intermediate High Japanese",1,6],
-  ["MDL 6503","Advanced Japanese",1,6],["MDL 6504","Advanced High Japanese",1,6],
-  ["MDL 6505","Superior Japanese: General Topics",1,6],["MDL 6506","Superior Japanese: Field Specific Studies & Research",1,6],
-  ["MDL 6507","Superior Japanese: Literature",1,6],["MDL 6508","Superior Japanese: Innovation & Entrepreneurship",1,6],
-  ["VPA 1600","Introduction to Band",1,1],["VPA 2600","Concert Band 1",1,2],["VPA 3600","Concert Band 2",1,3],
-  ["VPA 4600","Wind Ensemble",1,4],["VPA 5600","Wind Ensemble Extended Studies",1,5],
-  ["VPA 4605","Jazz Band",1,4],["VPA 5605","Jazz Band Extended Studies",1,5],
-  ["VPA 1601","Concert Choir 1",1,1],["VPA 2601","Concert Choir 2",1,2],["VPA 3601","Chamber Singers",1,3],
-  ["VPA 4601","Vocal Jazz Ensemble",1,4],["VPA 5601","Vocal Jazz Ensemble Extended Studies",1,5],
-  ["VPA 2604","Concert Orchestra 1",1,2],["VPA 3604","Concert Orchestra 2",1,3],
-  ["VPA 4604","Chamber Orchestra",1,4],["VPA 5604","Chamber Orchestra Extended Studies",1,5],
-  ["VPA 1602","Modern Band 1",0.5,1],["VPA 2602","Modern Band 2",0.5,2],
-  ["VPA 1603","Composition & Songwriting 1",0.5,1],["VPA 2603","Composition & Songwriting 2",0.5,2],
-  ["VPA 1650","Acting 1",0.5,1],["VPA 2650","Acting 2",0.5,2],["VPA 3650","Advanced Acting",0.5,3],
-  ["VPA 3651","Acting for the Camera",0.5,3],["VPA 1651","Stagecraft",0.5,1],
-  ["VPA 1700","Art Foundations",1,1],["VPA 1704","Idea to Object: Digital Fabrication",0.5,1],
-  ["VPA 1705","Digital Filmmaking 1",0.5,1],["VPA 2700","Digital Filmmaking 2",0.5,2],
-  ["VPA 3700","Ceramics",0.5,3],["VPA 3702","Communication Arts",0.5,3],["VPA 3703","Photography",0.5,3],
-  ["VPA 3701","Printmaking",0.5,3],["VPA 4700","Advanced Studio Art",1,4],
-  ["VPA 5700","AP Studio Art: Drawing",1,5],["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
-  ["PE 1802","Wellness 9",0.5,1],["PE 2802","Wellness 10",1,2],["PE 3805","Lifetime Activities",0.5,3],
-  ["PE 3801","Strength Training & Conditioning",0.5,3],["PE 4801","Strength Training & Conditioning 2",0.5,4],
-  ["PE 3803","Lifeguard Training",0.5,3],["PE 3804","Personal Fitness",0.5,3],
-  ["IND 1004","Skills for Success",0.5,1],["IND 1003","Teaching Intern",0.5,1],
-  ["IND 4000","Independent Inquiry",0.5,4],["IND 4001","Global Online Academy (GOA)",0.5,4],
-];
-
-/* ===== 2024–25 HS Learning Framework course list ===== */
-const COURSES_2425 = [
-  ["DLS 5800","Deep Learning Seminar I",1,5],["DLS 5801","Deep Learning Seminar II",1,5],
-  ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
-  ["ENG 1000","English 9",1,1],["ENG 2000","English 10",1,2],
-  ["ENG 4004","English 11/12: Advanced Topics: Crime and Punishment",1,4],["ENG 4003","English 11/12: Advanced Topics: Psychology of Fear",1,4],
-  ["ENG 5000","AP English Language and Composition",1,5],["ENG 5001","AP English Literature and Composition",1,5],
-  ["ENG 5002","SUPA: Introduction to Creative Nonfiction",1,5],["ENG 5003","SUPA: Presentational Speaking",0.5,5],
-  ["SOC 1100","Foundations of the Modern World",1,1],["SOC 2100","Modern World History",1,2],
-  ["SOC 3101","Japan Studies",0.5,3],["SOC 3103","Contemporary World Issues: Economics for Sustainable Development",0.5,3],
-  ["SOC 4100","US History",0.5,4],["SOC 4101","Race and Ethnic Studies",0.5,4],
-  ["SOC 5100","AP World History",1,5],["SOC 5101","AP US History",1,5],
-  ["SOC 5102","AP Economics",1,5],["SOC 5104","SUPA: Psychology",1,5],
-  ["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],["SOC 6100","Japan Seminar",1,6],
-  ["MTH 1200","Algebra 1",1,1],["MTH 2200","Geometry",1,2],["MTH 3200","Algebra 2",1,3],
-  ["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],["MTH 4202","Calculus",1,4],
-  ["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],["MTH 5203","AP Calculus BC (Post AB)",1,5],
-  ["MTH 5202","AP Statistics",1,5],["MTH 6201","Advanced Math Topics: Differential Equations & Complex Variables",1,6],
-  ["SCI 1300","Biology",1,1],["SCI 2301","Chemistry",1,2],["SCI 3302","Physics",1,3],
-  ["SCI 4300","Biomedical Science",1,4],["SCI 4301","Organic Chemistry",1,4],["SCI 4303","Food Science and Sustainability",1,4],
-  ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
-  ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
-  ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
-  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Global Citizenship in the Digital Age",0.5,1],
-  ["DI 5900","AP Computer Science Principles",1,5],["DI 5901","AP Computer Science A",1,5],
-  ["DI 5903","SUPA: Data Science",1,5],["DI 6902","Advanced Topics in Computer Science",0.5,6],
-  ["MDL 1510","Novice Mid Chinese",1,1],["MDL 2510","Novice High Chinese",1,2],
-  ["MDL 3510","Intermediate Chinese",1,3],["MDL 4510","Intermediate Mid Chinese",1,4],
-  ["MDL 5510","AP Chinese Language and Culture",1,5],["MDL 6500","Advanced Chinese: Politics & Economics",1,6],
-  ["MDL 1511","Novice Mid-High Spanish",1,1],["MDL 2511","Intermediate Spanish",1,2],
-  ["MDL 3511","Intermediate Mid Spanish",1,3],["MDL 4511","Intermediate High Spanish",1,4],
-  ["MDL 5511","AP Spanish Language and Culture",1,5],
-  ["MDL 1502","Novice Japanese",1,1],["MDL 2502","Novice Mid Japanese",1,2],
-  ["MDL 3502","Novice High Japanese",1,3],["MDL 4502","Intermediate Japanese",1,4],
-  ["MDL 5502","AP Japanese Language and Culture",1,5],["MDL 6502","Intermediate High Japanese",1,6],
-  ["MDL 6503","Advanced Japanese",1,6],["MDL 6504","Advanced High Japanese",1,6],
-  ["MDL 6505","Superior Japanese: General Topics",1,6],["MDL 6506","Superior Japanese: Field Specific Studies and Research",1,6],
-  ["MDL 6507","Superior Japanese: Literature",1,6],["MDL 6508","Superior Japanese: Innovation and Entrepreneurship",1,6],
-  ["MDL 6509","Applied Japanese Through Impact Capstone",1,6],
-  ["VPA 1600","Introduction to Band",1,1],["VPA 2600","Concert Band 1",1,2],["VPA 3600","Concert Band 2",1,3],
-  ["VPA 4600","Wind Ensemble",1,4],["VPA 5600","Wind Ensemble Extended Studies",1,5],
-  ["VPA 4605","Jazz Band",1,4],["VPA 5605","Jazz Band Extended Studies",1,5],
-  ["VPA 1601","Concert Choir 1",1,1],["VPA 2601","Concert Choir 2",1,2],["VPA 3601","Chamber Singers",1,3],
-  ["VPA 4601","Vocal Jazz Ensemble",1,4],["VPA 5601","Vocal Jazz Ensemble Extended Studies",1,5],
-  ["VPA 2604","Concert Orchestra 1",1,2],["VPA 3604","Concert Orchestra 2",1,3],
-  ["VPA 4604","Chamber Orchestra",1,4],["VPA 5604","Chamber Orchestra Extended Studies",1,5],
-  ["VPA 1602","Modern Band 1",0.5,1],["VPA 2602","Modern Band 2",0.5,2],
-  ["VPA 1603","Composition and Songwriting 1",0.5,1],["VPA 2603","Composition and Songwriting 2",0.5,2],
-  ["VPA 1650","Acting 1",0.5,1],["VPA 2650","Acting 2",0.5,2],["VPA 3650","Advanced Acting",0.5,3],
-  ["VPA 1651","Stagecraft",0.5,1],
-  ["VPA 1700","Art Foundations",1,1],["VPA 1704","Idea to Object: Digital Fabrication",0.5,1],
-  ["VPA 1705","Digital Filmmaking 1",0.5,1],["VPA 2700","Digital Filmmaking 2",0.5,2],
-  ["VPA 3700","Ceramics",0.5,3],["VPA 3702","Communication Arts",0.5,3],["VPA 3703","Photography",0.5,3],
-  ["VPA 4700","Advanced Studio Art",1,4],
-  ["VPA 5700","AP Studio Art: Drawing",1,5],["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
-  ["PE 1802","Wellness 9",0.5,1],["PE 2802","Wellness 10",1,2],["PE 3805","Lifetime Activities",0.5,3],
-  ["PE 3801","Strength Training and Conditioning",0.5,3],["PE 4801","Strength Training and Conditioning 2",0.5,4],
-  ["PE 3803","Lifeguard Training",0.5,3],["PE 3804","Personal Fitness",0.5,3],
-  ["IND 1004","Skills for Success",0.5,1],["IND 1003","Teaching Intern",0.5,1],
-  ["IND 4000","Independent Inquiry",0.5,4],["IND 4001","Global Online Academy (GOA)",0.5,4],
-  ["IND 6001","IMPACT Capstone: Element in Action",1,6],
-];
-
-/* ===== 2023–24 HS Learning Framework course list ===== */
-const COURSES_2324 = [
-  ["ENG 5050","AP Seminar",1,5],["CAP 5051","AP Research",1,5],
-  ["ENG 1000","English 9",1,1],["ENG 1001","Humanities: English / History",1,1],
-  ["ENG 2000","English 10",1,2],
-  ["ENG 4001","English 11/12: Advanced Topics: Crime and Punishment",1,4],
-  ["ENG 4002","English 11/12: Advanced Topics: Heroes and Villains",1,4],
-  ["ENG 4003","English 11/12: Advanced Topics: Psychology of Fear",1,4],
-  ["ENG 5000","AP English Language and Composition",1,5],["ENG 5001","AP English Literature and Composition",1,5],
-  ["ENG 5002","SUPA: Introduction to Creative Nonfiction",1,5],["ENG 5003","SUPA: Presentational Speaking",0.5,5],
-  ["SOC 1100","Foundations of the Modern World",1,1],["SOC 1101","Humanities: English / History",1,1],
-  ["SOC 2100","Modern World History",1,2],["SOC 3100","Psychology",0.5,3],
-  ["SOC 3101","Japan Studies",0.5,3],["SOC 3103","Contemporary World Issues: Economics for Sustainable Development",0.5,3],
-  ["SOC 4100","US History",1,4],["SOC 3102","Race and Ethnic Studies",0.5,3],
-  ["SOC 5100","AP World History",1,5],["SOC 5101","AP US History",1,5],
-  ["SOC 5102","AP Economics",1,5],["SOC 5105","SUPA: Introduction to Entrepreneurship",1,5],
-  ["SOC 6100","Japan Seminar",1,6],
-  ["MTH 1200","Algebra 1",1,1],["MTH 2200","Geometry",1,2],["MTH 3200","Algebra 2 with Trigonometry",1,3],
-  ["MTH 4200","Precalculus",1,4],["MTH 4201","Advanced Precalculus",1,4],["MTH 4202","Calculus",1,4],
-  ["MTH 5200","AP Calculus AB",1,5],["MTH 5201","AP Calculus BC",1,5],["MTH 5203","AP Calculus BC (Post AB)",1,5],
-  ["MTH 5202","AP Statistics",1,5],["MTH 6201","Advanced Math Topics: Linear Algebra, Multivariable Calculus",1,6],
-  ["SCI 1300","Biology",1,1],["SCI 2301","Chemistry",1,2],["SCI 3302","Physics",1,3],
-  ["SCI 4300","Biomedical Science",1,4],["SCI 4301","Organic Chemistry",1,4],
-  ["SCI 4302","Exercise & Health Science",1,4],["SCI 4303","Food Science and Sustainability",1,4],
-  ["SCI 5300","AP Environmental Science",1,5],["SCI 5301","AP Biology",1,5],["SCI 5302","AP Chemistry",1,5],
-  ["SCI 5304","AP Physics 2",1,5],["SCI 6300","Synthetic Biology",1,6],
-  ["DI 1900","Design Products",0.5,1],["DI 1901","Design with Code",0.5,1],
-  ["DI 1902","Design with Physical Computing & Robotics",0.5,1],["DI 1903","Global Citizenship in the Digital Age",0.5,1],
-  ["DI 2900","Design Studio",0.5,2],["DI 5902","AP Computer Science Principles",1,5],
-  ["DI 5901","AP Computer Science A",1,5],["DI 5903","SUPA: Data Science",1,5],
-  ["MDL 1510","Novice Mid Chinese",1,1],["MDL 2510","Novice High Chinese",1,2],
-  ["MDL 3510","Intermediate Chinese",1,3],["MDL 4510","Intermediate Mid Chinese",1,4],
-  ["MDL 5510","AP Chinese Language and Culture",1,5],["MDL 6501","Advanced Chinese: Culture and Media",1,6],
-  ["MDL 1511","Novice Mid-High Spanish",1,1],["MDL 2511","Intermediate Spanish",1,2],
-  ["MDL 3511","Intermediate Mid Spanish",1,3],["MDL 4511","Intermediate High Spanish",1,4],
-  ["MDL 5511","AP Spanish Language and Culture",1,5],["MDL 6511","Advanced Spanish",1,6],
-  ["MDL 1502","Novice Japanese",1,1],["MDL 2502","Novice Mid Japanese",1,2],
-  ["MDL 3502","Novice High Japanese",1,3],["MDL 4502","Intermediate Japanese",1,4],
-  ["MDL 5502","AP Japanese Language and Culture",1,5],["MDL 6502","Intermediate High Japanese",1,6],
-  ["MDL 6503","Advanced Japanese",1,6],["MDL 6504","Advanced High Japanese",1,6],
-  ["MDL 6505","Superior Japanese: General Topics",1,6],["MDL 6506","Superior Japanese: Field Specific Studies and Research",1,6],
-  ["MDL 6507","Superior Japanese: Literature",1,6],["MDL 6508","Superior Japanese: Innovation and Entrepreneurship",1,6],
-  ["MDL 6509","Applied Japanese Through Impact Capstone",1,6],
-  ["VPA 1600","Introduction to Band",1,1],["VPA 2600","Concert Band 1",1,2],["VPA 3600","Concert Band 2",1,3],
-  ["VPA 4600","Wind Ensemble",1,4],["VPA 5600","Wind Ensemble Extended Studies",1,5],
-  ["VPA 4605","Jazz Band",1,4],["VPA 5605","Jazz Band Extended Studies",1,5],
-  ["VPA 1601","Concert Choir 1",1,1],["VPA 2601","Concert Choir 2",1,2],["VPA 3601","Chamber Singers",1,3],
-  ["VPA 4601","Vocal Jazz Ensemble",1,4],["VPA 5601","Vocal Jazz Ensemble Extended Studies",1,5],
-  ["VPA 2604","Concert Orchestra 1",1,2],["VPA 3604","Concert Orchestra 2",1,3],
-  ["VPA 4604","Chamber Orchestra",1,4],["VPA 5604","Chamber Orchestra Extended Studies",1,5],
-  ["VPA 1602","Guitar 1",0.5,1],["VPA 2602","Guitar 2",0.5,2],
-  ["VPA 1603","Composition and Songwriting 1",0.5,1],["VPA 2603","Composition and Songwriting 2",0.5,2],
-  ["VPA 2605","Global Music",0.5,2],
-  ["VPA 1650","Acting 1",0.5,1],["VPA 2650","Acting 2",0.5,2],["VPA 1651","Stagecraft",0.5,1],
-  ["VPA 1700","Art Foundations",1,1],["VPA 1704","Idea to Object: Digital Fabrication",0.5,1],
-  ["VPA 1705","Digital Filmmaking 1",0.5,1],["VPA 2700","Digital Filmmaking 2",0.5,2],
-  ["VPA 3700","Ceramics",0.5,3],["VPA 3702","Communication Arts",0.5,3],
-  ["VPA 3701","Printmaking",0.5,3],["VPA 3703","Photography",0.5,3],
-  ["VPA 4700","Advanced Studio Art",1,4],
-  ["VPA 5700","AP Studio Art: Drawing",1,5],["VPA 5701","AP Studio Art: 2D",1,5],["VPA 5702","AP Studio Art: 3D",1,5],
-  ["PE 1802","Wellness 9",0.5,1],["PE 2802","Wellness 10",1,2],["PE 3805","Wellness 11/12",0.5,3],
-  ["PE 3801","Strength Training and Conditioning",0.5,3],["PE 3803","Lifeguard Training",0.5,3],
-  ["PE 3804","Personal Fitness",0.5,3],
-  ["IND 1002","Skills for Literacy",0.5,1],["IND 1004","Skills for Success",0.5,1],["IND 1005","Skills for Communication",0.5,1],
-  ["IND 1003","Teaching Intern",0.5,1],["IND 4000","Independent Inquiry",0.5,4],
-  ["IND 4001","Global Online Academy (GOA)",0.5,4],
-  ["IND 6000","IMPACT Seminar",1,6],["IND 6001","IMPACT Capstone: Element in Action",1,6],
-];
+/* ===== Course catalogs =====
+   Loaded from courses/*.json by the loader in index.html before this script runs.
+   Updating for a new school year = editing/adding a JSON file, not code. */
+const COURSES_2627 = window.COURSE_DATA.frameworks["2026-27"];
+const COURSES_2526 = window.COURSE_DATA.frameworks["2025-26"];   // older frameworks: names/credits/offerings differ
+const COURSES_2425 = window.COURSE_DATA.frameworks["2024-25"];
+const COURSES_2324 = window.COURSE_DATA.frameworks["2023-24"];
+const PLAN_RULES   = window.COURSE_DATA.rules;                    // courses/rules.json — plan checks
 
 /* ===== Multi-framework selection =====
    Each year of a student's plan maps to the framework in effect that year,
@@ -343,9 +88,12 @@ const ALL_COURSE_BY_ID = Object.assign({},
   Object.fromEntries(COURSES_2526.map(c => [c[0], c])),
   Object.fromEntries(COURSES_2627.map(c => [c[0], c]))
 );
-// stable index for every course id → lets share links store a tiny number instead of the id string.
-// (Order is fixed for this build; keep the course arrays above append-only to preserve old links.)
-const ID_LIST = Object.keys(ALL_COURSE_BY_ID);
+// ---- Share-link course index ----
+// Links store each class as a small number = its position in courses/course-ids.json.
+// That list is APPEND-ONLY (see the note inside it); tests/check-course-ids.js enforces it in CI.
+const PINNED_COURSE_IDS = window.COURSE_DATA.pinnedIds;
+// any catalog id not pinned yet still works (appended after the pinned ones), but CI flags it
+const ID_LIST = PINNED_COURSE_IDS.concat(Object.keys(ALL_COURSE_BY_ID).filter(id => !PINNED_COURSE_IDS.includes(id)));
 const ID_INDEX = Object.fromEntries(ID_LIST.map((id, i) => [id, i]));
 
 /* ============================================================
@@ -498,27 +246,43 @@ searchEl.addEventListener('input', () => {
         <span class="material-symbols-rounded" style="color:${isRequired?'var(--md-outline-variant)':'var(--md-on-surface-variant)'};">${isRequired?'lock':'add'}</span>
       </div>`;
     item.onclick = () => addClass(c);
+    item.classList.add('result-pick');
+    item.setAttribute('role', 'option');
     resultsEl.appendChild(item);
   });
+  searchActive = -1;
+});
+
+// ---- Search keyboard: ↑/↓ highlight a result, Enter adds it, Esc clears ----
+let searchActive = -1;
+function setSearchActive(i){
+  const items = [...resultsEl.querySelectorAll('.result-pick')];
+  if (!items.length) { searchActive = -1; return; }
+  searchActive = (i + items.length) % items.length;
+  items.forEach((el, k) => { el.classList.toggle('kb-active', k === searchActive); el.setAttribute('aria-selected', k === searchActive ? 'true' : 'false'); });
+  items[searchActive].scrollIntoView({ block: 'nearest' });
+}
+searchEl.addEventListener('keydown', (e) => {
+  const items = resultsEl.querySelectorAll('.result-pick');
+  if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); setSearchActive(searchActive + 1); }
+  else if (e.key === 'ArrowUp' && items.length) { e.preventDefault(); setSearchActive(searchActive < 0 ? items.length - 1 : searchActive - 1); }
+  else if (e.key === 'Enter' && items.length) { e.preventDefault(); items[Math.max(0, searchActive)].click(); }
+  else if (e.key === 'Escape' && searchEl.value) { e.preventDefault(); e.stopPropagation(); searchEl.value = ''; resultsEl.innerHTML = ''; searchActive = -1; }
 });
 
 function addClass(c) {
   const [id,name,credits,level] = c;
   if (!(document.getElementById('gradYear').value || '').trim()) {
-    showAlert("Pick your graduation year in the top-right first. That tells the planner which year's course list applies to each grade level.");
+    openWelcome("Pick your class first, so the planner knows which year's course list to use.");
     return;
   }
   if (REQUIRED_IDS.has(id)) { showSnack(`${name} is required and is already in your plan`); return; }
   const passFail = PASS_FAIL.has(name);
   const entry = { uid: nextUid(), id,name,credits,level,passFail, year: currentYear, required: false,
     grade: passFail ? null : PLANNED, result: passFail ? PLANNED : null };
-  // if the user clicked a half-width "Select Course" filler, drop the new class right next to that
-  // lone half so the two pair into one row (instead of appending it as a new row)
-  const anchorIdx = (pendingInsertAfterUid && isHalfWidth(entry))
-    ? enrolled.findIndex(e => e.uid === pendingInsertAfterUid && e.year === currentYear)
-    : -1;
-  if (anchorIdx >= 0) enrolled.splice(anchorIdx + 1, 0, entry); else enrolled.push(entry);
+  const placed = insertEntry(entry, pendingInsertAfterUid);
   pendingInsertAfterUid = null;
+  if (!placed){ showSnack(`${currentYear} year is full (8 rows max)`); return; }
   searchEl.value=''; resultsEl.innerHTML=''; searchEl.focus();
   render(); showSnack(`Added ${name} to ${currentYear}`);
 }
@@ -539,13 +303,39 @@ function isHalfWidth(e){
   if (FULLWIDTH_YEARLONG.has(e.id)) return false;
   return (e.credits || 1) < 1;
 }
-// how many row-units a year uses (full block = 1, half block = 0.5); a column holds 8
-function yearUnits(year){ return enrolled.filter(e => e.year === year).reduce((s,e)=> s + (isHalfWidth(e)?0.5:1), 0); }
+// ---- 8-row cap per year. A row is a full block, a pair of halves, or a lone half. ----
+const MAX_ROWS = 8;
+function rowCount(year){ return rowsForYear(year).length; }
+function yearUnits(year){ return rowCount(year); }   // kept for older callers
+// the last half block in a year that has no partner yet (so a new half can pair with it)
+function loneHalfUid(year){
+  const lone = rowsForYear(year).filter(b => b.length === 1)
+    .map(b => enrolled.find(e => e.uid === b[0])).filter(isHalfWidth);
+  return lone.length ? lone[lone.length - 1].uid : null;
+}
+// would a new full/half block fit in this year without exceeding 8 rows?
+function fitsInYear(year, half){
+  if (half && loneHalfUid(year)) return true;          // pairs into an existing row
+  return rowCount(year) + 1 <= MAX_ROWS;
+}
+// place a new entry: halves pair with a lone half (the clicked filler first); refuse past 8 rows
+function insertEntry(entry, preferredAnchor){
+  const year = entry.year, half = isHalfWidth(entry);
+  if (!fitsInYear(year, half)) return false;
+  let anchor = null;
+  if (half){
+    const pref = preferredAnchor && enrolled.find(e => e.uid === preferredAnchor && e.year === year);
+    const prefIsLone = pref && isHalfWidth(pref) && boxOf(year, pref.uid).length === 1;
+    anchor = prefIsLone ? pref.uid : loneHalfUid(year);
+  }
+  const ai = anchor ? enrolled.findIndex(e => e.uid === anchor) : -1;
+  if (ai >= 0) enrolled.splice(ai + 1, 0, entry); else enrolled.push(entry);
+  return true;
+}
 function addFree(year, half){
-  const need = half ? 0.5 : 1;
-  if (yearUnits(year) + need > 8 + 1e-9){ showSnack(`${year} year is full`); return; }
-  enrolled.push({ uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false,
-    year, required:false, grade: PLANNED, result:null, isFree:true, freeHalf:!!half });
+  const entry = { uid: nextUid(), id:'FREE', name:'Free', credits:0, level:0, passFail:false,
+    year, required:false, grade: PLANNED, result:null, isFree:true, freeHalf:!!half };
+  if (!insertEntry(entry, null)){ showSnack(`${year} year is full (8 rows max)`); return; }
   render(); showSnack(`Added a ${half?'½ ':''}free period to ${year}`);
 }
 
@@ -678,7 +468,7 @@ function dropZone(pill, e){
 // an empty "Select Course" slot only accepts a dragged item of matching width
 function emptyAccepts(pill){
   const dragged = enrolled.find(x=>x.uid===dragUid);
-  return dragged && (isHalfWidth(dragged) === pill.classList.contains('half'));
+  return dragged && pill.dataset.add === dragged.year && (isHalfWidth(dragged) === pill.classList.contains('half'));
 }
 // move an item to just after anchorUid (or to the end of its year when no anchor)
 function moveItemAfter(fromUid, anchorUid){
@@ -729,11 +519,16 @@ function onPillDrop(e){
   const pill = e.currentTarget;
   if (!dragUid) { clearIndicators(); return; }
   const dragged = enrolled.find(x=>x.uid===dragUid);
+  const before = enrolled.slice(), rowsBefore = rowCount(dragged.year);
+  // a reorder may split a half pair; never let that push the year past 8 rows
+  const guard = () => {
+    if (rowCount(dragged.year) > Math.max(MAX_ROWS, rowsBefore)){ enrolled = before; showSnack('That move would need a 9th row'); }
+  };
   if (pill.classList.contains('empty')){            // drop into an open slot
     if (!emptyAccepts(pill)) { clearIndicators(); return; }
     e.preventDefault();
     moveItemAfter(dragUid, pill.dataset.anchor || null);
-    clearIndicators(); render(); return;
+    guard(); clearIndicators(); render(); return;
   }
   if (pill.dataset.uid===dragUid || !dragDropAllowed(pill.dataset.uid)) { clearIndicators(); return; }
   e.preventDefault();
@@ -746,7 +541,7 @@ function onPillDrop(e){
     if (isHalfWidth(dragged)) reorderWithinYear(dragUid, pill.dataset.uid, after);
     else moveFullBeforeAfterBox(dragUid, pill.dataset.uid, after);
   }
-  clearIndicators(); render();
+  guard(); clearIndicators(); render();
 }
 
 /* ===================== Planner grid view ===================== */
@@ -797,7 +592,9 @@ function renderGrid(wrap){
       const mk = e.passFail
         ? (e.result && e.result!==PLANNED ? e.result : '')
         : (e.grade && e.grade!==PLANNED ? e.grade : '');
-      return `<button class="course-pill${half?' half':''}" draggable="true" data-uid="${e.uid}" style="--c:${dm.c}" title="${e.name.replace(/"/g,'&quot;')}"><span class="cp-name">${e.name}</span>${mk?`<span class="cp-grade">${mk}</span>`:''}</button>`;
+      const lv = issueLevel(e.uid);
+      const tip = (e.name + (lv ? '\n' + issueTitle(e.uid) : '')).replace(/"/g,'&quot;');
+      return `<button class="course-pill${half?' half':''}${lv?' has-issue '+lv:''}" draggable="true" data-uid="${e.uid}" style="--c:${dm.c}" title="${tip}"><span class="cp-name">${e.name}</span>${mk?`<span class="cp-grade">${mk}</span>`:''}</button>`;
     };
     const freePill = (e) =>
       `<div class="course-pill free${isHalfWidth(e)?' half':''}" draggable="true" data-uid="${e.uid}" data-free="1" title="Free period"><span class="cp-name">Free</span><button class="free-x" data-freex="${e.uid}" title="Remove free period"><span class="material-symbols-rounded">close</span></button></div>`;
@@ -816,9 +613,8 @@ function renderGrid(wrap){
     let remaining = Math.max(0, 8 - units);
     while (remaining >= 1) { pills += emptyPill(false, ''); remaining -= 1; }
 
-    const usedUnits = list.reduce((s,e)=> s + (isHalfWidth(e)?0.5:1), 0);
-    const fullFits = usedUnits + 1   <= 8 + 1e-9;
-    const halfFits = usedUnits + 0.5 <= 8 + 1e-9;
+    const fullFits = fitsInYear(year, false);
+    const halfFits = fitsInYear(year, true);
     col.innerHTML = `${ list.length ? `<button class="icon-btn board-reset year-reset" data-year="${year}" title="Reset ${year} year"><span class="material-symbols-rounded">restart_alt</span></button>` : '' }
       <div class="board-col-title">${year} Year</div>
       <div class="board-pills">${pills}</div>
@@ -835,7 +631,8 @@ function renderGrid(wrap){
   wrap.appendChild(board);
 
   // class pills: click opens editor; all draggable
-  wrap.querySelectorAll('.course-pill[data-uid]:not([data-free])').forEach(b=>{
+  // tap any class or free block to open its popup (grade, position, remove) — works on phones too
+  wrap.querySelectorAll('.course-pill[data-uid]').forEach(b=>{
     b.onclick = () => openClassModal(b.dataset.uid);
   });
   // every class/free pill is draggable
@@ -877,6 +674,24 @@ function renderGrid(wrap){
   });
 }
 
+// ---- Tap-friendly reordering (phones can't drag): move a block's whole row up/down ----
+function moveRow(uid, dir){
+  const e = enrolled.find(x => x.uid === uid); if (!e) return;
+  const boxes = rowsForYear(e.year);
+  const i = boxes.findIndex(b => b.includes(uid)), j = i + dir;
+  if (i < 0 || j < 0 || j >= boxes.length) return;
+  const before = enrolled.slice(), rowsBefore = boxes.length;
+  [boxes[i], boxes[j]] = [boxes[j], boxes[i]];
+  reorderYearByUids(e.year, boxes.flat());
+  if (rowCount(e.year) > Math.max(MAX_ROWS, rowsBefore)) enrolled = before;
+  render();
+}
+function swapSides(uid){
+  const e = enrolled.find(x => x.uid === uid); if (!e) return;
+  const box = boxOf(e.year, uid); if (box.length !== 2) return;
+  swapItems(e.year, box[0], box[1]);
+  render();
+}
 function openClassModal(uid){ classModalUid = uid; render(); }
 function closeClassModal(){ classModalUid = null; render(); }
 
@@ -895,7 +710,46 @@ function renderClassModal(){
   const ov = document.getElementById('classModal');
   if(!ov) return;
   const e = enrolled.find(x => x.uid === classModalUid);
-  if(!e || e.isFree){ ov.classList.add('hidden'); ov.innerHTML=''; classModalUid=null; return; }
+  if(!e || viewMode !== 'grid'){ ov.classList.add('hidden'); ov.innerHTML=''; classModalUid=null; return; }
+
+  const boxes = rowsForYear(e.year), bi = boxes.findIndex(b => b.includes(e.uid));
+  const pairedWith = (bi >= 0 && boxes[bi].length === 2) ? boxes[bi].find(u => u !== e.uid) : null;
+  const moveCtl = `
+      <div class="cm-row">
+        <span class="label-medium">Position</span>
+        <div class="cm-move">
+          <button class="btn tonal cm-up" ${bi <= 0 ? 'disabled' : ''} aria-label="Move up"><span class="material-symbols-rounded">arrow_upward</span>Up</button>
+          <button class="btn tonal cm-down" ${bi < 0 || bi >= boxes.length - 1 ? 'disabled' : ''} aria-label="Move down"><span class="material-symbols-rounded">arrow_downward</span>Down</button>
+          ${pairedWith ? `<button class="btn tonal cm-side" aria-label="Swap sides"><span class="material-symbols-rounded">swap_horiz</span>Swap side</button>` : ''}
+        </div>
+      </div>`;
+  const wireMove = () => {
+    ov.querySelector('.cm-up')?.addEventListener('click', () => moveRow(e.uid, -1));
+    ov.querySelector('.cm-down')?.addEventListener('click', () => moveRow(e.uid, +1));
+    ov.querySelector('.cm-side')?.addEventListener('click', () => swapSides(e.uid));
+  };
+
+  if (e.isFree){
+    ov.innerHTML = `
+    <div class="modal-card class-modal">
+      <div class="cm-head">
+        <span class="dept-badge" style="--c:#8a8578"><span class="material-symbols-rounded">event_available</span></span>
+        <div><div class="cm-name">${e.freeHalf ? '½ ' : ''}Free period</div>
+          <div class="cm-sub">${e.year} · no credit</div></div>
+        <button class="icon-btn cm-close" title="Close" aria-label="Close"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      ${moveCtl}
+      <div class="cm-foot">
+        <button class="btn text cm-remove"><span class="material-symbols-rounded">delete</span>Remove free period</button>
+      </div>
+    </div>`;
+    ov.classList.remove('hidden');
+    ov.onclick = (ev)=>{ if(ev.target===ov) closeClassModal(); };
+    ov.querySelector('.cm-close').onclick = closeClassModal;
+    ov.querySelector('.cm-remove').onclick = ()=>{ classModalUid=null; removeClass(e.uid); };
+    wireMove();
+    return;
+  }
   const dm = DEPT_META[deptOf(e.id)] || DEPT_META['Elective'];
 
   const gradeCtl = e.passFail
@@ -913,13 +767,15 @@ function renderClassModal(){
         <span class="dept-badge" style="--c:${dm.c}"><span class="material-symbols-rounded">${dm.i}</span></span>
         <div><div class="cm-name">${e.name}</div>
           <div class="cm-sub">${e.id} · ${e.credits} cr${e.passFail?' · Pass/Fail':''}</div></div>
-        <button class="icon-btn cm-close" title="Close"><span class="material-symbols-rounded">close</span></button>
+        <button class="icon-btn cm-close" title="Close" aria-label="Close"><span class="material-symbols-rounded">close</span></button>
       </div>
       <div class="cm-row">
         <span class="label-medium">${e.passFail?'Result':'Letter grade'}</span>
         ${gradeCtl}
       </div>
       ${e.passFail ? '' : strandPanelHTML(e)}
+      ${(planIssueByUid.get(e.uid)||[]).map(i=>`<div class="plan-check ${i.level} static"><span class="material-symbols-rounded">${i.level==='warn'?'error':'info'}</span><span class="body-medium">${escapeHtml(i.text)}</span></div>`).join('')}
+      ${moveCtl}
       <div class="cm-foot">
         <button class="btn text cm-remove"><span class="material-symbols-rounded">delete</span>Remove class</button>
       </div>
@@ -930,6 +786,7 @@ function renderClassModal(){
   ov.onclick = (ev)=>{ if(ev.target===ov) closeClassModal(); };
   ov.querySelector('.cm-close').onclick = closeClassModal;
   ov.querySelector('.cm-remove').onclick = ()=>{ classModalUid=null; removeClass(e.uid); };
+  wireMove();
   ov.querySelectorAll('.grade-select').forEach(s=>s.onchange=()=>{ e.grade=s.value; if(e.strandCount){e.strandLevels=new Array(e.strandCount).fill('');} render(); });
   ov.querySelectorAll('.pf-select').forEach(s=>s.onchange=()=>{ e.result=s.value; render(); });
   ov.querySelectorAll('.strand-count').forEach(s=>s.onchange=()=>{
@@ -945,7 +802,110 @@ function renderClassModal(){
   ov.querySelectorAll('.strand-name').forEach(inp=>inp.oninput=()=>{ e.strandNames=e.strandNames||[]; e.strandNames[+inp.dataset.i]=inp.value; saveState(); });
 }
 
+
+/* ===================== Plan checks =====================
+   Duplicates, out-of-order sequences, missing prerequisites and grade-level limits.
+   The rules live in courses/rules.json; these are advisory, counselors decide. */
+const GRADE_OF = { Freshman: 9, Sophomore: 10, Junior: 11, Senior: 12 };
+let planIssues = [], planIssueByUid = new Map();
+const courseName = id => (ALL_COURSE_BY_ID[id] || [id, id])[1];
+const joinNames = ids => [...new Set(ids.map(courseName))].join(' or ');
+const joinYears = ys => ys.length === 2 ? `${ys[0]} and ${ys[1]}` : ys.slice(0, -1).join(', ') + ', and ' + ys[ys.length - 1];
+function runPlanChecks(){
+  const R = PLAN_RULES || {};
+  const items = enrolled.filter(e => !e.isFree);
+  const yi = e => YEARS.indexOf(e.year);
+  const issues = [];
+  const add = (level, text, uids) => issues.push({ level, text, uids: [...new Set(uids)] });
+
+  // 1) the same course twice
+  const rep = R.repeatable || {};
+  const isRepeatable = id => (rep.ids || []).includes(id) || (rep.prefixes || []).some(p => id.startsWith(p + ' '));
+  const byTeacher = id => (rep.teacherDiscretionPrefixes || []).some(p => id.startsWith(p + ' '));
+  const byId = new Map();
+  items.forEach(e => { if (!byId.has(e.id)) byId.set(e.id, []); byId.get(e.id).push(e); });
+  byId.forEach((list, id) => {
+    if (list.length < 2) return;
+    const name = list[0].name;
+    YEARS.forEach(y => {
+      const inYear = list.filter(e => e.year === y);
+      if (inYear.length > 1) add('warn', `${name} is in ${y} year twice.`, inYear.map(e => e.uid));
+    });
+    const years = YEARS.filter(y => list.some(e => e.year === y));
+    if (years.length < 2 || isRepeatable(id)) return;
+    if (byTeacher(id)) add('info', `${name} is planned in ${joinYears(years)}. Language levels are only repeated at the teacher's discretion.`, list.map(e => e.uid));
+    else add('warn', `${name} is planned in ${joinYears(years)}. It isn't normally taken twice.`, list.map(e => e.uid));
+  });
+
+  // 2) grade-level limits
+  const minGrade = (R.minGrade || {}).courses || {};
+  const who = { 10: 'sophomores and up', 11: 'juniors and seniors', 12: 'seniors only' };
+  items.forEach(e => {
+    const g = minGrade[e.id];
+    if (g && GRADE_OF[e.year] < g) add('warn', `${e.name} is open to ${who[g] || 'grade ' + g + '+'}, but it's planned for ${e.year} year.`, [e.uid]);
+  });
+
+  // 3) prerequisites: each group must be met by courses in an earlier year
+  (R.prerequisites || []).forEach(rule => {
+    items.filter(e => e.id === rule.course).forEach(e => {
+      const y = yi(e);
+      const sameYearOk = rule.sameYearOkInGrade && GRADE_OF[e.year] >= rule.sameYearOkInGrade;
+      const failed = [], tooLate = [];
+      (rule.needs || []).forEach(grp => {
+        const w = grp.weights || {};
+        const score = items.filter(x => grp.anyOf.includes(x.id) && (yi(x) < y || (sameYearOk && yi(x) === y)))
+                           .reduce((s, x) => s + (w[x.id] || 1), 0);
+        if (score >= (grp.min || 1)) return;
+        failed.push(grp);
+        items.filter(x => grp.anyOf.includes(x.id) && yi(x) >= y && x.uid !== e.uid).forEach(x => tooLate.push(x));
+      });
+      if (!failed.length) return;
+      const base = rule.text || `${e.name} needs ${failed.map(g => joinNames(g.anyOf)).join(', and ')} in an earlier year.`;
+      if (tooLate.length) add('warn', `${base} Right now ${tooLate.map(x => x.name).join(' / ')} comes in the same year or later.`, [e.uid, ...tooLate.map(x => x.uid)]);
+      else if ((rule.ifMissing || 'warn') === 'warn') add('warn', base, [e.uid]);
+      else add('info', `${base} Ignore this if you met it another way (earlier school, placement).`, [e.uid]);
+    });
+  });
+
+  // 4) sequences: a higher level planned in an earlier year than a lower one
+  (R.sequences || []).forEach(seq => {
+    const lvl = id => seq.levels.findIndex(l => l.includes(id));
+    const s = items.filter(e => lvl(e.id) >= 0);
+    s.forEach(hi => s.forEach(lo => {
+      if (lvl(hi.id) <= lvl(lo.id) || yi(hi) >= yi(lo)) return;
+      if (issues.some(i => i.uids.includes(hi.uid) && i.uids.includes(lo.uid))) return;   // already reported
+      add('warn', `${lo.name} (${lo.year}) is planned after ${hi.name} (${hi.year}). It normally comes first.`, [hi.uid, lo.uid]);
+    }));
+  });
+
+  planIssues = issues.sort((a, b) => (a.level === b.level ? 0 : a.level === 'warn' ? -1 : 1));
+  planIssueByUid = new Map();
+  issues.forEach(i => i.uids.forEach(u => { if (!planIssueByUid.has(u)) planIssueByUid.set(u, []); planIssueByUid.get(u).push(i); }));
+  return planIssues;
+}
+// worst level for a class: 'warn' | 'info' | null
+const issueLevel = uid => { const l = planIssueByUid.get(uid); return !l ? null : l.some(i => i.level === 'warn') ? 'warn' : 'info'; };
+const issueTitle = uid => (planIssueByUid.get(uid) || []).map(i => '⚠ ' + i.text).join('\n');
+function renderPlanChecks(){
+  const el = document.getElementById('planChecks'); if (!el) return;
+  if (!enrolled.some(e => !e.isFree)) { el.innerHTML = ''; return; }
+  const head = `<div class="plan-checks-head"><span class="title-medium">Plan checks</span>
+    <span class="label-medium note">${planIssues.length ? planIssues.length + ' to review' : 'No conflicts found'}</span></div>`;
+  el.innerHTML = head + planIssues.map((i, k) => `
+    <button class="plan-check ${i.level}" data-k="${k}">
+      <span class="material-symbols-rounded">${i.level === 'warn' ? 'error' : 'info'}</span>
+      <span class="body-medium">${escapeHtml(i.text)}</span>
+    </button>`).join('');
+  el.querySelectorAll('.plan-check').forEach(b => b.onclick = () => {
+    const uid = planIssues[+b.dataset.k].uids[0];
+    if (viewMode === 'grid') { openClassModal(uid); return; }
+    const row = document.querySelector(`.class-row[data-uid="${uid}"]`);
+    if (row) { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1400); }
+  });
+}
+
 function render() {
+  runPlanChecks();
   const wrap = document.getElementById('yearSections');
   wrap.innerHTML = '';
   document.getElementById('yearSections').classList.toggle('grid-mode', viewMode === 'grid');
@@ -1025,7 +985,7 @@ function render() {
           <span class="drag-handle" title="Drag to reorder within ${e.year}"><span class="material-symbols-rounded">drag_indicator</span></span>
           <span class="dept-badge" style="--c:${dm.c}"><span class="material-symbols-rounded">${dm.i}</span></span>
           <div class="info" ${e.passFail?'':`data-toggle="${e.uid}" style="cursor:pointer"`}><div class="name body-large">${e.name}</div>
-          <div class="detail label-medium">${e.id} · ${crLabel}${lvlLabel}${e.passFail?' · Pass/Fail':''}${strandLabel}${reqLabel}</div></div>
+          <div class="detail label-medium">${e.id} · ${crLabel}${lvlLabel}${e.passFail?' · Pass/Fail':''}${strandLabel}${reqLabel}${issueLevel(e.uid)?` · <span class="row-issue ${issueLevel(e.uid)}" title="${escapeHtml(issueTitle(e.uid))}"><span class="material-symbols-rounded">${issueLevel(e.uid)==='warn'?'error':'info'}</span>Check</span>`:''}</div></div>
           ${control}
           ${expander}
           ${deleteBtn}`;
@@ -1262,6 +1222,7 @@ function renderRequirements() {
 
   document.getElementById('reqSummary').textContent =
     met === total ? `All ${total} met ✓` : `${met} of ${total} met`;
+  renderPlanChecks();
 }
 
 function animateNumber(el, to) {
@@ -1321,7 +1282,12 @@ document.getElementById('saveCancel').onclick = () => saveModal.classList.add('h
 saveModal.onclick = (e) => { if (e.target === saveModal) saveModal.classList.add('hidden'); };
 
 const alertModal = document.getElementById('alertModal');
-function showAlert(msg) { document.getElementById('alertMsg').textContent = msg; alertModal.classList.remove('hidden'); }
+function showAlert(msg, title = 'Heads up', icon = 'info') {
+  document.getElementById('alertMsg').textContent = msg;
+  document.getElementById('alertTitle').textContent = title;
+  document.getElementById('alertIcon').textContent = icon;
+  alertModal.classList.remove('hidden');
+}
 document.getElementById('alertOk').onclick = () => alertModal.classList.add('hidden');
 alertModal.onclick = (e) => { if (e.target === alertModal) alertModal.classList.add('hidden'); };
 
@@ -1368,7 +1334,7 @@ function gradeMark(e) {
 
 function generatePDF(mode) {
   const includeGPA = (mode === "both");
-  let fname = prompt("Enter a file name for your PDF:", includeGPA ? "ASIJ_academic_record" : "ASIJ_course_plan");
+  let fname = prompt("Enter a file name for your PDF:", includeGPA ? "ASIJ_unofficial_plan_and_GPA" : "ASIJ_course_plan");
   if (fname === null) return;
   fname = fname.trim(); if (!fname) { showSnack("No file name entered"); return; }
   if (!fname.toLowerCase().endsWith(".pdf")) fname += ".pdf";
@@ -1382,9 +1348,9 @@ function generatePDF(mode) {
   // ---------- Header ----------
   try { doc.addImage(LOGO_DATA, "JPEG", L, 40, 46, 46); } catch (e) {}
   doc.setFont(serif, "bold"); doc.setFontSize(19); doc.setTextColor(...INK);
-  doc.text("THE AMERICAN SCHOOL IN JAPAN", PW/2, 64, { align: "center" });
+  doc.text("ASIJ COURSE PLANNER", PW/2, 64, { align: "center" });
   doc.setFont(serif, "normal"); doc.setFontSize(11);
-  doc.text("A C A D E M I C   R E C O R D   &   F O U R - Y E A R   P L A N", PW/2, 84, { align: "center" });
+  doc.text("U N O F F I C I A L   G P A   E S T I M A T E   &   F O U R - Y E A R   P L A N", PW/2, 84, { align: "center" });
   doc.setDrawColor(...INK); doc.setLineWidth(1.5); doc.line(L, 98, R, 98);
   doc.setDrawColor(GOLD);   doc.setLineWidth(1);   doc.line(L, 102, R, 102);
 
@@ -1714,14 +1680,136 @@ function applyState(data){
     themeBtn.querySelector('span').textContent='light_mode';
   }
 }
+// ---- Shared-link safety: never let a link silently overwrite the plan saved on this device ----
+let pendingSharedPlan = null;
+function planHasContent(data){
+  return !!data && ((data.enrolled||[]).some(e => !e.required) ||
+    YEARS.some(y => ((data.yearNotes||{})[y] || '').trim()));
+}
+// content fingerprint run through the link codec, so a plan and its own link always compare equal
+function planContentSig(data){
+  if (!data) return '';
+  let items = [];
+  try { items = (data.enrolled||[]).filter(e => !e.required).map(encItem); } catch(_){}
+  return JSON.stringify([items, YEARS.map(y => (data.yearNotes||{})[y] || ''), data.studentName || '', String(data.gradYear || '')]);
+}
+// swap the whole plan for another (link, backup file). One undo step brings the previous plan back.
+function replacePlan(data){
+  classModalUid = null; notesModalYear = null;
+  enrolled = []; yearNotes = { Freshman:'', Sophomore:'', Junior:'', Senior:'' };
+  applyState(data);
+  updateFwLabel();
+  render();
+}
 function loadState(){
-  // a shared link takes priority over this device's local copy
-  let data = readPlanFromHash();
-  if(!data){
-    try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) data = JSON.parse(raw); }catch(e){ /* ignore corrupt/blocked storage */ }
+  const linkData = readPlanFromHash();
+  let localData = null;
+  try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) localData = JSON.parse(raw); }catch(e){ /* ignore corrupt/blocked storage */ }
+  let data = linkData || localData;
+  // a different shared plan + a real local plan → keep showing the local one until the user chooses
+  if (linkData && planHasContent(localData) && planContentSig(localData) !== planContentSig(linkData)){
+    data = localData;
+    pendingSharedPlan = linkData;
   }
   try{ applyState(data); }catch(e){ /* ignore malformed plan */ }
 }
+function promptSharedPlan(){
+  if (!pendingSharedPlan) return;
+  const who = (pendingSharedPlan.studentName || '').trim();
+  document.getElementById('sharedMsg').textContent =
+    `This link contains ${who ? who + "'s" : 'a different'} plan. Opening it replaces the plan saved on this device. ` +
+    `You can press Undo right after to get yours back, or download a backup of yours first.`;
+  document.getElementById('sharedModal').classList.remove('hidden');
+}
+function closeSharedPrompt(){ document.getElementById('sharedModal').classList.add('hidden'); }
+document.getElementById('sharedOpen').onclick = () => {
+  const d = pendingSharedPlan; pendingSharedPlan = null; closeSharedPrompt();
+  replacePlan(d); showSnack('Opened the shared plan — Undo brings yours back');
+  if (needsWelcome()) openWelcome();
+};
+document.getElementById('sharedKeep').onclick = () => {
+  pendingSharedPlan = null; closeSharedPrompt();
+  updateShareURLNow(); showSnack('Kept your plan');
+  if (needsWelcome()) openWelcome();
+};
+document.getElementById('sharedBackup').onclick = () => exportPlan();
+
+
+// ---- First-run welcome: ask for "Class of ____" instead of failing with an alert later ----
+// School year starts in August: Oct 2026 → 2026-27, so Class of 2027 are seniors now.
+function currentGradeFor(classOf){
+  const now = new Date();
+  const springYear = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
+  return 12 - (classOf - springYear);
+}
+function openWelcome(message){
+  const sel = document.getElementById('gradYear');
+  const opts = [...sel.options].map(o => o.value).filter(Boolean);
+  const label = g => g >= 9 && g <= 12 ? `${YEARS[g - 9]} this year` : g > 12 ? 'Graduated' : 'Starting high school soon';
+  document.getElementById('welcomeOptions').innerHTML = opts.map(v => {
+    const g = currentGradeFor(+v);
+    return `<button class="welcome-opt" data-class="${v}"><span class="wo-year">Class of ${v}</span><span class="wo-sub">${label(g)}</span></button>`;
+  }).join('');
+  document.getElementById('welcomeMsg').textContent = message ||
+    'Pick your graduating class so the planner loads the right course list for each of your four years.';
+  document.getElementById('welcomeTitle').textContent = message ? 'Which class are you in?' : "Welcome! What's your class?";
+  document.querySelectorAll('#welcomeOptions .welcome-opt').forEach(b => b.onclick = () => chooseClass(b.dataset.class));
+  document.getElementById('welcomeModal').classList.remove('hidden');
+  document.querySelector('#welcomeOptions .welcome-opt')?.focus();
+}
+function closeWelcome(){ document.getElementById('welcomeModal').classList.add('hidden'); }
+function chooseClass(v){
+  const sel = document.getElementById('gradYear');
+  sel.value = v;
+  // open on the year they're in now, so the first search shows this year's courses
+  const g = currentGradeFor(+v);
+  if (g >= 9 && g <= 12) {
+    currentYear = YEARS[g - 9];
+    document.querySelectorAll('#yearPicker button').forEach(x => x.classList.toggle('sel', x.dataset.year === currentYear));
+  }
+  sel.dispatchEvent(new Event('change'));
+  closeWelcome();
+  render();
+  showSnack(`Class of ${v} — showing ${currentYear} courses`);
+  document.getElementById('search')?.focus();
+}
+document.getElementById('welcomeSkip').onclick = closeWelcome;
+document.getElementById('welcomeModal').onclick = (e) => { if (e.target.id === 'welcomeModal') closeWelcome(); };
+const needsWelcome = () => !(document.getElementById('gradYear').value || '').trim();
+
+// ---- Backup file: download / restore the whole plan as .json ----
+function exportPlan(){
+  const payload = { app: 'asij-gpa-planner', version: 1, exportedAt: new Date().toISOString(), plan: stateObject() };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const name = (document.getElementById('studentName').value || 'my').trim().replace(/[^\w\-]+/g, '-').replace(/^-|-$/g, '') || 'my';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `asij-plan-${name}-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showSnack('Backup downloaded');
+}
+function importPlanText(text){
+  let obj;
+  try { obj = JSON.parse(text); } catch(_) { showAlert("That file isn't a valid plan backup.", "Can't open that file", 'error'); return; }
+  const plan = (obj && obj.plan) ? obj.plan : obj;            // also accept a bare saved-state object
+  if (!plan || !Array.isArray(plan.enrolled)){ showAlert("That file isn't a valid plan backup.", "Can't open that file", 'error'); return; }
+  const when = obj.exportedAt ? new Date(obj.exportedAt).toLocaleDateString() : null;
+  const n = plan.enrolled.filter(e => !e.required && !e.isFree).length;
+  confirmDialog({
+    title: 'Restore this backup?',
+    message: `Replaces your current plan with the backup${when ? ' from ' + when : ''} (${n} class${n===1?'':'es'}). You can Undo right after.`,
+    confirmLabel: 'Restore', icon: 'upload_file',
+    onConfirm: () => { replacePlan(plan); document.getElementById('shareModal').classList.add('hidden'); showSnack('Backup restored'); }
+  });
+}
+document.getElementById('exportBtn').onclick = exportPlan;
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').addEventListener('change', (ev) => {
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
+  if (!f) return;
+  const r = new FileReader(); r.onload = () => importPlanText(String(r.result || '')); r.readAsText(f);
+});
 
 // keep graduation year numeric + persist header fields
 document.getElementById('gradYear').addEventListener('change', () => {
@@ -1740,6 +1828,24 @@ document.getElementById('viewToggle').addEventListener('click', () => {
 // embed the brand logo (works offline)
 document.getElementById('brandLogo').src = LOGO_DATA;
 
+// ---- Esc closes whichever popup is open (most recently layered first) ----
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const open = id => !document.getElementById(id)?.classList.contains('hidden');
+  const closers = [
+    ['confirmModal', () => closeConfirm()],
+    ['alertModal',   () => alertModal.classList.add('hidden')],
+    ['sharedModal',  () => document.getElementById('sharedKeep').click()],   // Esc = the safe choice: keep my plan
+    ['welcomeModal', () => closeWelcome()],
+    ['notesModal',   () => closeNotesModal()],
+    ['shareModal',   () => document.getElementById('shareModal').classList.add('hidden')],
+    ['saveModal',    () => saveModal.classList.add('hidden')],
+    ['classModal',   () => closeClassModal()],
+  ];
+  const hit = closers.find(([id]) => open(id));
+  if (hit) { e.preventDefault(); hit[1](); }
+});
+
 document.getElementById('undoBtn').onclick = undo;
 document.getElementById('redoBtn').onclick = redo;
 window.addEventListener('keydown', (e) => {
@@ -1755,4 +1861,6 @@ loadState();
 updateFwLabel();
 render();
 commitHistory();   // set the undo baseline to the loaded plan
+promptSharedPlan();   // a different shared plan was in the link → ask before replacing this device's plan
+if (!pendingSharedPlan && needsWelcome()) openWelcome();   // first visit: ask for Class of ____
 

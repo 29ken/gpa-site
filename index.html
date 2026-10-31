@@ -12,17 +12,17 @@
   gtag('config', 'G-LN65FZCGM1');
 </script>
 <title>ASIJ GPA Calculator & Planner</title>
-<meta name="description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
+<meta name="description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download a PDF summary. Unofficial, student-made, not affiliated with ASIJ.">
 <meta name="robots" content="index, follow">
 <!-- Open Graph (Facebook, iMessage, Slack, Discord, LinkedIn, etc.) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ASIJ GPA Calculator & Planner">
 <meta property="og:title" content="ASIJ GPA Calculator & Planner">
-<meta property="og:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
+<meta property="og:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download a PDF summary. Unofficial, student-made, not affiliated with ASIJ.">
 <!-- Twitter / X -->
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ASIJ GPA Calculator & Planner">
-<meta name="twitter:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download an official-style PDF record.">
+<meta name="twitter:description" content="Plan your ASIJ high school courses year by year, calculate weighted and unweighted GPA, monitor diploma requirements, and download a PDF summary. Unofficial, student-made, not affiliated with ASIJ.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -51,7 +51,7 @@
   </div>
   <button class="icon-btn" id="undoBtn" title="Undo (Ctrl/Cmd+Z)" disabled><span class="material-symbols-rounded">undo</span></button>
   <button class="icon-btn" id="redoBtn" title="Redo (Ctrl/Cmd+Shift+Z)" disabled><span class="material-symbols-rounded">redo</span></button>
-  <button class="icon-btn" id="shareBtn" title="Get shareable link to this plan"><span class="material-symbols-rounded">link</span></button>
+  <button class="icon-btn" id="shareBtn" title="Share or back up this plan" aria-label="Share or back up this plan"><span class="material-symbols-rounded">link</span></button>
   <button class="icon-btn" id="themeBtn" title="Toggle theme"><span class="material-symbols-rounded">dark_mode</span></button>
 </header>
 
@@ -90,6 +90,7 @@
       <div id="reqBody">
         <div class="bar-grid" id="barGrid"></div>
         <div id="warnings" style="margin-top:16px;"></div>
+        <div id="planChecks"></div>
       </div>
     </div>
 
@@ -186,10 +187,20 @@
 
 <div id="alertModal" class="modal-overlay hidden">
   <div class="modal-card" style="max-width:380px;text-align:center;">
-    <span class="material-symbols-rounded" style="font-size:42px;color:var(--md-primary);">school</span>
-    <div class="title-large" style="margin:8px 0 6px;">Choose your Class of …</div>
+    <span class="material-symbols-rounded" id="alertIcon" style="font-size:42px;color:var(--md-primary);">info</span>
+    <div class="title-large" id="alertTitle" style="margin:8px 0 6px;">Heads up</div>
     <div class="body-medium note" id="alertMsg" style="margin-bottom:20px;"></div>
     <button class="btn filled" id="alertOk">Got it</button>
+  </div>
+</div>
+
+<div id="welcomeModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="modal-card welcome-card">
+    <span class="material-symbols-rounded welcome-icon">school</span>
+    <div class="title-large" id="welcomeTitle">Welcome! What's your class?</div>
+    <div class="body-medium note" id="welcomeMsg">Pick your graduating class so the planner loads the right course list for each of your four years.</div>
+    <div class="welcome-options" id="welcomeOptions"></div>
+    <button class="btn text" id="welcomeSkip">Just looking around</button>
   </div>
 </div>
 
@@ -209,13 +220,34 @@
 
 <div id="shareModal" class="modal-overlay hidden">
   <div class="modal-card" style="max-width:480px;text-align:left;">
-    <div class="title-large" style="margin-bottom:6px;">Your plan link</div>
+    <div class="title-large" style="margin-bottom:6px;">Share &amp; back up</div>
     <div class="body-medium note" style="margin-bottom:16px;">Bookmark this link or open it on any device to load this exact plan. The link updates as you edit — grab a fresh copy after making changes. Anyone with the link can open and edit their own copy; nothing is stored on a server, so keep the link private if your plan is.</div>
     <div style="display:flex;gap:8px;align-items:center;">
       <input id="shareUrl" readonly>
       <button class="btn filled" id="shareCopy"><span class="material-symbols-rounded">content_copy</span>Copy</button>
     </div>
+    <div class="share-divider"></div>
+    <div class="title-medium" style="margin-bottom:4px;">Backup file</div>
+    <div class="body-medium note" style="margin-bottom:12px;">Download your plan as a file to keep it safe, or restore one you saved earlier.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn tonal" id="exportBtn"><span class="material-symbols-rounded">download</span>Download backup</button>
+      <button class="btn tonal" id="importBtn"><span class="material-symbols-rounded">upload_file</span>Restore from file</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
     <div style="text-align:right;margin-top:18px;"><button class="btn text" id="shareClose">Close</button></div>
+  </div>
+</div>
+
+<div id="sharedModal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:440px;text-align:center;">
+    <span class="material-symbols-rounded" style="font-size:42px;color:var(--brand);">link</span>
+    <div class="title-large" style="margin:8px 0 6px;">Open shared plan?</div>
+    <div class="body-medium note" id="sharedMsg" style="margin-bottom:20px;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn text" id="sharedKeep">Keep my plan</button>
+      <button class="btn filled" id="sharedOpen">Open shared plan</button>
+    </div>
+    <button class="btn text" id="sharedBackup" style="margin-top:10px;font-size:13px;"><span class="material-symbols-rounded">download</span>Download a backup of mine first</button>
   </div>
 </div>
 
@@ -230,6 +262,36 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-<script src="app.js"></script>
+<script>
+/* Loads the course catalogs (courses/*.json), then starts the app. */
+(function () {
+  var files = {
+    "2026-27": "courses/courses-2627.json",
+    "2025-26": "courses/courses-2526.json",
+    "2024-25": "courses/courses-2425.json",
+    "2023-24": "courses/courses-2324.json"
+  };
+  function get(path) {
+    return fetch(path).then(function (r) { if (!r.ok) throw new Error(path + " (" + r.status + ")"); return r.json(); });
+  }
+  var keys = Object.keys(files);
+  Promise.all(keys.map(function (k) { return get(files[k]); })
+    .concat([get("courses/course-ids.json"), get("courses/rules.json")]))
+    .then(function (res) {
+      var frameworks = {};
+      keys.forEach(function (k, i) { frameworks[k] = res[i].courses; });
+      window.COURSE_DATA = { frameworks: frameworks, pinnedIds: res[keys.length].ids, rules: res[keys.length + 1] };
+      var s = document.createElement("script");
+      s.src = "app.js";
+      document.body.appendChild(s);
+    })
+    .catch(function (err) {
+      var box = document.createElement("div");
+      box.className = "boot-error";
+      box.textContent = "Couldn't load the course list (" + err.message + "). Please refresh the page.";
+      document.body.prepend(box);
+    });
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,53 @@
+{
+  "note": "Plan checks, based on the 2026-27 HS Learning Framework. These show as advisory warnings only; counselors make the final call. Course ids match courses-*.json. Years: 9 = Freshman ... 12 = Senior.",
+
+  "repeatable": {
+    "note": "Courses that can appear in more than one year without a duplicate warning.",
+    "prefixes": ["VPA"],
+    "ids": ["MTH 6202", "DI 6902", "IND 4000", "IND 4001", "IND 1003", "IND 1004", "PE 3805", "PE 3801", "PE 3804"],
+    "teacherDiscretionPrefixes": ["MDL"]
+  },
+
+  "minGrade": {
+    "note": "Lowest grade level allowed to take the course.",
+    "courses": {
+      "DLS 5800": 11, "DLS 5801": 12, "CAP 5051": 12, "ENG 5050": 11,
+      "ENG 5000": 11, "ENG 5001": 11, "ENG 5002": 11, "ENG 5003": 11,
+      "SOC 5104": 11, "SOC 5105": 11,
+      "SCI 4301": 11, "SCI 5300": 11, "SCI 5301": 11, "SCI 5302": 11, "SCI 5304": 11, "SCI 6300": 12,
+      "DI 5900": 10, "DI 5902": 10, "DI 5901": 10, "IND 4000": 11
+    }
+  },
+
+  "prerequisites": [
+    { "course": "SCI 2301", "needs": [{ "anyOf": ["SCI 1300"] }], "ifMissing": "info" },
+    { "course": "SCI 4301", "needs": [{ "anyOf": ["SCI 2301", "SCI 3303"] }], "ifMissing": "warn" },
+    { "course": "SCI 5302", "needs": [{ "anyOf": ["SCI 2301", "SCI 3303"] }], "ifMissing": "warn" },
+    { "course": "SCI 5304", "needs": [{ "anyOf": ["SCI 3302", "SCI 3303"] }], "ifMissing": "warn" },
+    { "course": "SCI 5301", "needs": [{ "anyOf": ["SCI 1300"] }, { "anyOf": ["SCI 2301", "SCI 3302", "SCI 3303"] }], "ifMissing": "warn" },
+    { "course": "SCI 5300", "needs": [{ "anyOf": ["SCI 1300"] }, { "anyOf": ["SCI 2301", "SCI 3302", "SCI 3303"] }], "ifMissing": "warn" },
+    { "course": "SCI 6300", "needs": [{ "anyOf": ["SCI 2301", "SCI 3303"] }], "ifMissing": "warn" },
+
+    { "course": "MTH 6202", "needs": [{ "anyOf": ["MTH 5201", "MTH 5203"] }], "ifMissing": "info", "sameYearOkInGrade": 12 },
+
+    { "course": "DI 5901", "needs": [{ "anyOf": ["DI 5900", "DI 5902", "DI 1903", "DI 1904", "DI 1905", "DI 1901", "DI 1902"], "min": 2, "weights": { "DI 5900": 2, "DI 5902": 2 } }],
+      "ifMissing": "info", "text": "AP Computer Science A needs AP CS Principles, or two of Technology & Society, Data Science 1, Cybersecurity 1, Design with Code, Design with Physical Computing & Robotics, in an earlier year." },
+    { "course": "DI 6902", "needs": [{ "anyOf": ["DI 5901", "DI 2900"] }], "ifMissing": "warn" },
+    { "course": "DI 4906", "needs": [{ "anyOf": ["DI 1904"] }, { "anyOf": ["DI 1901", "DI 5901"] }], "ifMissing": "warn" },
+    { "course": "DI 4907", "needs": [{ "anyOf": ["DI 1905"] }, { "anyOf": ["DI 1901", "DI 5901"] }], "ifMissing": "warn" },
+
+    { "course": "CAP 5051", "needs": [{ "anyOf": ["ENG 5050"] }], "ifMissing": "warn" },
+    { "course": "DLS 5801", "needs": [{ "anyOf": ["DLS 5800"] }], "ifMissing": "warn" },
+
+    { "course": "MDL 6506", "needs": [{ "anyOf": ["MDL 6505"] }], "ifMissing": "info" },
+    { "course": "MDL 6507", "needs": [{ "anyOf": ["MDL 6505"] }], "ifMissing": "info" },
+    { "course": "MDL 6508", "needs": [{ "anyOf": ["MDL 6505"] }], "ifMissing": "info" }
+  ],
+
+  "sequences": [
+    { "name": "Math", "note": "Students start at different levels, so only out-of-order placement is flagged.",
+      "levels": [["MTH 1201"], ["MTH 2200"], ["MTH 3200"], ["MTH 4200", "MTH 4201"], ["MTH 4202", "MTH 5200"], ["MTH 5201", "MTH 5203"], ["MTH 6202"]] },
+    { "name": "Japanese",
+      "levels": [["MDL 1502"], ["MDL 2502"], ["MDL 3502"], ["MDL 4502"], ["MDL 5502", "MDL 6502"], ["MDL 6503"], ["MDL 6504"], ["MDL 6505"], ["MDL 6506", "MDL 6507", "MDL 6508"]] }
+  ]
+}
