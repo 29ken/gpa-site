@@ -1,0 +1,24 @@
+{
+  "note": "APPEND-ONLY. Share links store each class as its position in this list. Never reorder or delete entries (a retired course keeps its slot). Add new course ids to the END, then run: node tests/check-course-ids.js --update",
+  "ids": [
+    "ENG 5050", "CAP 5051", "ENG 1000", "ENG 1001", "ENG 2000", "ENG 4001", "ENG 4002", "ENG 4003",
+    "ENG 5000", "ENG 5001", "ENG 5002", "ENG 5003", "SOC 1100", "SOC 1101", "SOC 2100", "SOC 3100",
+    "SOC 3101", "SOC 3103", "SOC 4100", "SOC 3102", "SOC 5100", "SOC 5101", "SOC 5102", "SOC 5105",
+    "SOC 6100", "MTH 1200", "MTH 2200", "MTH 3200", "MTH 4200", "MTH 4201", "MTH 4202", "MTH 5200",
+    "MTH 5201", "MTH 5203", "MTH 5202", "MTH 6201", "SCI 1300", "SCI 2301", "SCI 3302", "SCI 4300",
+    "SCI 4301", "SCI 4302", "SCI 4303", "SCI 5300", "SCI 5301", "SCI 5302", "SCI 5304", "SCI 6300",
+    "DI 1900", "DI 1901", "DI 1902", "DI 1903", "DI 2900", "DI 5902", "DI 5901", "DI 5903",
+    "MDL 1510", "MDL 2510", "MDL 3510", "MDL 4510", "MDL 5510", "MDL 6501", "MDL 1511", "MDL 2511",
+    "MDL 3511", "MDL 4511", "MDL 5511", "MDL 6511", "MDL 1502", "MDL 2502", "MDL 3502", "MDL 4502",
+    "MDL 5502", "MDL 6502", "MDL 6503", "MDL 6504", "MDL 6505", "MDL 6506", "MDL 6507", "MDL 6508",
+    "MDL 6509", "VPA 1600", "VPA 2600", "VPA 3600", "VPA 4600", "VPA 5600", "VPA 4605", "VPA 5605",
+    "VPA 1601", "VPA 2601", "VPA 3601", "VPA 4601", "VPA 5601", "VPA 2604", "VPA 3604", "VPA 4604",
+    "VPA 5604", "VPA 1602", "VPA 2602", "VPA 1603", "VPA 2603", "VPA 2605", "VPA 1650", "VPA 2650",
+    "VPA 1651", "VPA 1700", "VPA 1704", "VPA 1705", "VPA 2700", "VPA 3700", "VPA 3702", "VPA 3701",
+    "VPA 3703", "VPA 4700", "VPA 5700", "VPA 5701", "VPA 5702", "PE 1802", "PE 2802", "PE 3805",
+    "PE 3801", "PE 3803", "PE 3804", "IND 1002", "IND 1004", "IND 1005", "IND 1003", "IND 4000",
+    "IND 4001", "IND 6000", "IND 6001", "DLS 5800", "DLS 5801", "ENG 4004", "SOC 4101", "SOC 5104",
+    "DI 5900", "DI 6902", "MDL 6500", "VPA 3650", "PE 4801", "SOC 5103", "MTH 1201", "MTH 6202",
+    "SCI 2302", "VPA 3651", "SCI 3303", "SCI 4304", "DI 1904", "DI 1905", "DI 4906", "DI 4907"
+  ]
+}
