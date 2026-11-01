@@ -170,7 +170,7 @@ function seedRequired() {
 
 let enrolled = seedRequired();
 let currentYear = "Freshman";
-let viewMode = 'list';            // 'list' | 'grid' (board)
+let viewMode = 'grid';            // 'grid' = board (default for new visitors) | 'list'; a saved plan or share link keeps its own choice
 let classModalUid = null;         // uid of class shown in the board's popup editor
 let pendingInsertAfterUid = null; // when a "Select Course" slot is clicked, the next added class goes right after this uid
 let notesModalYear = null;        // year whose notes popup is open (list view)
